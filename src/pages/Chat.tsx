@@ -26,6 +26,7 @@ export default function Chat() {
   const [partner, setPartner] = useState<Partner>({ name: null, photo: null })
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
+  const [sendError, setSendError] = useState(false)
   const [loading, setLoading] = useState(true)
   const bottomRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
@@ -93,14 +94,19 @@ export default function Chat() {
   const send = async () => {
     const content = text.trim()
     if (!content || sending || !user) return
-    setText('')
     setSending(true)
-    await supabase.from('messages').insert({
+    setSendError(false)
+    const { error } = await supabase.from('messages').insert({
       match_id: matchId,
       sender_id: user.id,
       content,
     })
     setSending(false)
+    if (error) {
+      setSendError(true)
+    } else {
+      setText('')
+    }
   }
 
   const handleKey = (e: React.KeyboardEvent) => {
@@ -160,7 +166,11 @@ export default function Chat() {
       </div>
 
       {/* Input */}
-      <div className="flex-shrink-0 bg-white border-t border-stone-200 px-4 py-3 flex items-end gap-3">
+      <div className="flex-shrink-0 bg-white border-t border-stone-200 px-4 py-3 flex flex-col gap-1">
+      {sendError && (
+        <p className="text-xs text-red-500 text-center">Message failed to send — please try again.</p>
+      )}
+      <div className="flex items-end gap-3">
         <textarea
           value={text}
           onChange={e => setText(e.target.value)}
@@ -177,6 +187,7 @@ export default function Chat() {
         >
           ↑
         </button>
+      </div>
       </div>
     </div>
   )
