@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/auth'
 import { useProfileStore } from '../store/profile'
 import BottomNav from '../components/BottomNav'
@@ -14,6 +15,7 @@ function getAge(birthDate: string): number {
 export default function Profile() {
   const { signOut } = useAuthStore()
   const { profile } = useProfileStore()
+  const navigate = useNavigate()
 
   const photo = profile?.photos?.[0] ?? null
   const age = profile?.birth_date ? getAge(profile.birth_date) : null
@@ -42,6 +44,14 @@ export default function Profile() {
             <p className="text-stone-500 text-sm mt-1 capitalize">{profile.gender}</p>
           )}
         </div>
+
+        {/* Edit profile */}
+        <button
+          onClick={() => navigate('/profile/edit')}
+          className="w-full py-3 rounded-xl bg-amber-400 hover:bg-amber-500 text-stone-900 font-semibold transition-colors mb-3"
+        >
+          Edit profile
+        </button>
 
         {/* Sign out */}
         <button
