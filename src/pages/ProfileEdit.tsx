@@ -218,7 +218,7 @@ export default function ProfileEdit() {
     name.trim() !== (profile?.name ?? '') ||
     birthDate !== (profile?.birth_date ?? '') ||
     gender !== (profile?.gender ?? '') ||
-    JSON.stringify(lookingFor) !== JSON.stringify(profile?.looking_for ?? [])
+    JSON.stringify([...lookingFor].sort()) !== JSON.stringify([...(profile?.looking_for ?? [])].sort())
   const genresDirty =
     JSON.stringify([...selectedGenres].sort()) !== JSON.stringify([...originalGenres].sort())
   const booksDirty =
