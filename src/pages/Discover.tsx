@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import TinderCard from 'react-tinder-card'
 import { useAuthStore } from '../store/auth'
 import { supabase } from '../lib/supabase'
+import BottomNav from '../components/BottomNav'
 
 interface Candidate {
   id: string
@@ -21,7 +22,7 @@ function getAge(birthDate: string): number {
 }
 
 export default function Discover() {
-  const { user, signOut } = useAuthStore()
+  const { user } = useAuthStore()
   const [candidates, setCandidates] = useState<Candidate[]>([])
   const [loading, setLoading] = useState(true)
   const [currentIndex, setCurrentIndex] = useState(-1)
@@ -108,14 +109,8 @@ export default function Discover() {
     <div className="h-screen bg-stone-100 flex flex-col overflow-hidden">
 
       {/* Header */}
-      <div className="px-6 pt-12 pb-3 flex-shrink-0 flex items-center justify-between">
+      <div className="px-6 pt-12 pb-3 flex-shrink-0 flex items-center justify-center">
         <h1 className="text-2xl font-bold text-stone-900">Chapter</h1>
-        <button
-          onClick={signOut}
-          className="text-sm text-stone-400 hover:text-stone-600 transition-colors"
-        >
-          Sign out
-        </button>
       </div>
 
       {/* Card area */}
@@ -206,7 +201,7 @@ export default function Discover() {
       </div>
 
       {/* Action buttons */}
-      <div className="flex-shrink-0 flex justify-center gap-8 py-8">
+      <div className="flex-shrink-0 flex justify-center gap-8 py-5">
         <button
           onClick={() => triggerSwipe('left')}
           disabled={isEmpty}
@@ -224,6 +219,8 @@ export default function Discover() {
           ❤️
         </button>
       </div>
+
+      <BottomNav />
 
       {/* Match modal */}
       {matchName && (
