@@ -53,7 +53,7 @@ All tables have RLS enabled. Key tables:
 - **Phase 1 (Setup):** Complete — scaffold, deps, Capacitor, Supabase connected, DB migrated.
 - **Phase 2 (Auth):** Complete — Supabase email/password, auth guard (`src/components/AuthGuard.tsx`), session persistence via Zustand (`src/store/auth.ts`). Login at `src/pages/Login.tsx`, register at `src/pages/Register.tsx`.
 - **Phase 3 (Onboarding):** Complete — 4-step flow in `src/pages/onboarding/`: StepPhotos (upload to `photos` Storage bucket), StepInfo (name/dob/gender/looking_for), StepGenres (min 3), StepBooks (Open Library search, min 1). Profile store in `src/store/profile.ts`. AuthGuard redirects to `/onboarding` when `onboarding_complete = false`.
-- **Phase 4 (Discover):** Not started — swipe stack via `get_candidates()` RPC + `react-tinder-card`.
+- **Phase 4 (Discover):** Complete — `src/pages/Discover.tsx`. Calls `get_candidates()` RPC then fetches profile details; renders swipe stack with `react-tinder-card`. Swipe right = like, left = pass — recorded to `swipes` table. Match detection queries `matches` table after each like; shows a modal on mutual match. Action buttons trigger programmatic swipe via ref.
 - **Phase 5 (Matches + Chat):** Not started — match list, Realtime chat.
 
 ## Planned page structure
