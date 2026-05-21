@@ -51,8 +51,8 @@ All tables have RLS enabled. Key tables:
 ## Implementation status
 
 - **Phase 1 (Setup):** Complete — scaffold, deps, Capacitor, Supabase connected, DB migrated.
-- **Phase 2 (Auth):** Not started — Supabase email/password, auth guard, session persistence.
-- **Phase 3 (Onboarding):** Not started — 4-step flow: photos → info → genres → books.
+- **Phase 2 (Auth):** Complete — Supabase email/password, auth guard (`src/components/AuthGuard.tsx`), session persistence via Zustand (`src/store/auth.ts`). Login at `src/pages/Login.tsx`, register at `src/pages/Register.tsx`.
+- **Phase 3 (Onboarding):** Complete — 4-step flow in `src/pages/onboarding/`: StepPhotos (upload to `photos` Storage bucket), StepInfo (name/dob/gender/looking_for), StepGenres (min 3), StepBooks (Open Library search, min 1). Profile store in `src/store/profile.ts`. AuthGuard redirects to `/onboarding` when `onboarding_complete = false`.
 - **Phase 4 (Discover):** Not started — swipe stack via `get_candidates()` RPC + `react-tinder-card`.
 - **Phase 5 (Matches + Chat):** Not started — match list, Realtime chat.
 

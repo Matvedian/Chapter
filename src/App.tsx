@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import AuthGuard from './components/AuthGuard'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import Onboarding from './pages/onboarding'
 import Discover from './pages/Discover'
 
 export default function App() {
@@ -10,6 +11,14 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route
+          path="/onboarding"
+          element={
+            <AuthGuard>
+              <Onboarding />
+            </AuthGuard>
+          }
+        />
         <Route
           path="/"
           element={
