@@ -27,7 +27,7 @@ npx cap run android  # Build and run on Android
 
 **Backend:** Supabase (project `mpzgtfnmhwthzwnnegpt`, region `eu-west-1`). Provides Postgres, Auth, Storage (profile photos in `photos` bucket), and Realtime (chat). Client: `src/lib/supabase.ts`, credentials in `.env` (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`).
 
-**State:** Two Zustand stores in `src/store/` — `auth.ts` (session/user) and `profile.ts` (own profile). No other stores.
+**State:** Zustand stores in `src/store/` — `auth.ts` (session/user), `profile.ts` (own profile), `notifications.ts` (toast queue + unread badge count).
 
 **Book search:** Open Library API — free, no key. Wrapper in `src/lib/openLibrary.ts` exports `searchBooks(query)` and `coverUrl(coverId, size)`.
 
@@ -70,3 +70,5 @@ supabase.rpc('get_candidates', { p_user_id: user.id })
 - **Phase 3:** Complete — 4-step onboarding (`src/pages/onboarding/`): photos upload, info, genres (min 3), books via Open Library (min 1).
 - **Phase 4:** Complete — `Discover.tsx` swipe stack with `react-tinder-card`, swipes recorded, mutual match detection + modal.
 - **Phase 5:** Complete — `Matches.tsx` (last-message preview, unread dot, sorted by activity), `Chat.tsx` (Realtime, auto-scroll, send on Enter), `Profile.tsx` (own profile + sign out), `BottomNav` across Discover/Matches/Profile.
+- **Phase 6:** Complete — profile editing (`ProfileEdit.tsx`): photos, info, genres, books all editable post-onboarding.
+- **Notifications:** Complete — `NotificationListener` (global Realtime subscriber for new matches/messages), `ToastBanner` (slide-in toast, 4s auto-dismiss, tappable to chat), `BottomNav` unread badge. Toasts suppressed when already in target chat; match toasts suppressed on Discover (has its own modal).
