@@ -8,7 +8,7 @@ import StepInfo from './StepInfo'
 import StepGenres from './StepGenres'
 import StepBooks from './StepBooks'
 
-const STEPS = ['Photos', 'Info', 'Genres', 'Books']
+const STEPS = ['Info', 'Photos', 'Genres', 'Books']
 
 export interface SelectedBook {
   open_library_id: string
@@ -111,8 +111,8 @@ export default function Onboarding() {
         <p className="text-xs text-stone-400 text-right">Step {step + 1} of {STEPS.length}</p>
       </div>
 
-      {step === 0 && <StepPhotos onNext={next} />}
-      {step === 1 && <StepInfo onNext={next} />}
+      {step === 0 && <StepInfo onNext={next} />}
+      {step === 1 && <StepPhotos onNext={next} />}
       {step === 2 && <StepGenres onNext={next} />}
       {step === 3 && <StepBooks onNext={next} submitting={submitting} />}
     </div>
