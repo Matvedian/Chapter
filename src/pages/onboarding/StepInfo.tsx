@@ -23,11 +23,21 @@ const maxBirthDate = (() => {
   return d.toISOString().split('T')[0]
 })()
 
+function getAge(dateStr: string): number {
+  const today = new Date()
+  const birth = new Date(dateStr)
+  let age = today.getFullYear() - birth.getFullYear()
+  const m = today.getMonth() - birth.getMonth()
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--
+  return age
+}
+
 export default function StepInfo({ onNext }: Props) {
   const [name, setName] = useState('')
   const [birthDate, setBirthDate] = useState('')
   const [gender, setGender] = useState('')
   const [lookingFor, setLookingFor] = useState<string[]>([])
+  const [ageError, setAgeError] = useState(false)
 
   const toggleLookingFor = (value: string) => {
     setLookingFor(prev =>
@@ -36,6 +46,11 @@ export default function StepInfo({ onNext }: Props) {
   }
 
   const canContinue = name.trim() && birthDate && gender && lookingFor.length > 0
+
+  const handleContinue = () => {
+    if (getAge(birthDate) < 18) { setAgeError(true); return }
+    onNext({ name: name.trim(), birthDate, gender, lookingFor })
+  }
 
   return (
     <div className="px-6 pt-6 pb-10">
@@ -59,10 +74,13 @@ export default function StepInfo({ onNext }: Props) {
           <input
             type="date"
             value={birthDate}
-            onChange={e => setBirthDate(e.target.value)}
+            onChange={e => { setBirthDate(e.target.value); setAgeError(false) }}
             max={maxBirthDate}
-            className="w-full px-4 py-3 rounded-xl border border-stone-200 bg-white text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-400"
+            className={`w-full px-4 py-3 rounded-xl border bg-white text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-400 ${ageError ? 'border-red-400' : 'border-stone-200'}`}
           />
+          {ageError && (
+            <p className="text-red-500 text-sm mt-1.5">You need to be 18+ to use the app.</p>
+          )}
         </div>
 
         <div>
@@ -105,7 +123,7 @@ export default function StepInfo({ onNext }: Props) {
       </div>
 
       <button
-        onClick={() => onNext({ name: name.trim(), birthDate, gender, lookingFor })}
+        onClick={handleContinue}
         disabled={!canContinue}
         className="w-full py-3 rounded-xl bg-amber-400 hover:bg-amber-500 text-stone-900 font-semibold transition-colors disabled:opacity-40 mt-10"
       >
