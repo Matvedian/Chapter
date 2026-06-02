@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## About
 
-Chapter is a dating app that matches users based on shared book and reading preferences (genres, favorite books). The MVP covers auth, onboarding, swipe-based discovery, and chat.
+Chapter is a dating app that matches users based on shared book and reading preferences (genres, favourite books). The MVP covers auth, onboarding, swipe-based discovery, matches list, real-time chat, and profile.
 
 ## Commands
 
@@ -17,57 +17,56 @@ npx cap run ios      # Build and run on iOS simulator/device
 npx cap run android  # Build and run on Android
 ```
 
-> `react-tinder-card` has a peer dep conflict with React 19. Always use `npm install --legacy-peer-deps` when adding packages.
+> Always use `npm install --legacy-peer-deps` when adding packages — `react-tinder-card` has a peer dep conflict with React 19.
 
 ## Architecture
 
-**Frontend:** React 19 + TypeScript + Vite. Tailwind CSS v4 via `@tailwindcss/vite` plugin (no `tailwind.config.js` — configured entirely in `vite.config.ts`).
+**Frontend:** React 19 + TypeScript + Vite. Tailwind CSS v4 via `@tailwindcss/vite` plugin — configured entirely in `vite.config.ts`, no `tailwind.config.js`.
 
-**Mobile:** Capacitor wraps the Vite web build. `capacitor.config.ts` points `webDir` at `dist/`. After any build, run `npx cap sync` before opening native IDEs.
+**Mobile:** Capacitor wraps the Vite web build. `capacitor.config.ts` points `webDir` at `dist/`. Run `npx cap sync` after every build before opening native IDEs.
 
-**Backend:** Supabase (project `mpzgtfnmhwthzwnnegpt`, region `eu-west-1`). Provides Postgres, Auth, Storage (profile photos), and Realtime (chat). Client is in `src/lib/supabase.ts`, credentials in `.env` (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`).
+**Backend:** Supabase (project `mpzgtfnmhwthzwnnegpt`, region `eu-west-1`). Provides Postgres, Auth, Storage (profile photos in `photos` bucket), and Realtime (chat). Client: `src/lib/supabase.ts`, credentials in `.env` (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`).
 
-**State:** Zustand stores in `src/store/`.
+**State:** Two Zustand stores in `src/store/` — `auth.ts` (session/user) and `profile.ts` (own profile). No other stores.
 
-**Book search:** Open Library API — free, no key. Wrapper lives in `src/lib/openLibrary.ts` (to be created).
+**Book search:** Open Library API — free, no key. Wrapper in `src/lib/openLibrary.ts` exports `searchBooks(query)` and `coverUrl(coverId, size)`.
 
 ## Database schema (live on Supabase)
 
-All tables have RLS enabled. Key tables:
+All tables have RLS enabled.
 
 | Table | Purpose |
 |---|---|
-| `profiles` | Extends `auth.users`. Has `name`, `birth_date`, `photos text[]`, `gender`, `looking_for text[]`, `onboarding_complete` |
-| `genres` | Lookup table, seeded with 20 genres. Public read. |
+| `profiles` | Extends `auth.users`. Columns: `name`, `birth_date`, `photos text[]`, `gender`, `looking_for text[]`, `onboarding_complete` |
+| `genres` | Lookup table, 20 genres, public read |
 | `user_genres` | User ↔ genre join table |
-| `books` | Cached from Open Library. `id` is uuid, `open_library_id` is unique. |
+| `books` | Cached from Open Library. `open_library_id` is unique. |
 | `user_books` | User ↔ book with `shelf` enum (`reading`, `read`, `want_to_read`, `favorite`) and optional `rating` |
 | `swipes` | `swiper_id`, `swiped_id`, `direction` (`like`\|`pass`). Unique on `(swiper_id, swiped_id)`. |
-| `matches` | Created automatically by trigger `on_mutual_like` when two users both `like` each other. |
-| `messages` | `match_id`, `sender_id`, `content`. Realtime subscription for chat. |
+| `matches` | Auto-created by trigger `on_mutual_like` on mutual like. |
+| `messages` | `match_id`, `sender_id`, `content`. Used for Realtime chat. |
 
-**Matching RPC:** `get_candidates(user_id uuid)` — returns profiles not yet swiped, filtered by gender prefs, scored by `(shared books × 3) + (shared genres × 1)`. Call via `supabase.rpc('get_candidates', { user_id })`.
+**Matching RPC:** `get_candidates(p_user_id uuid)` — returns `TABLE(profile_id uuid, score integer)`. Score = `(shared_books × 3) + (shared_genres × 1)`. Call via:
+```ts
+supabase.rpc('get_candidates', { p_user_id: user.id })
+```
+
+## Key non-obvious patterns
+
+**Auth → Profile loading chain:** `AuthGuard` fetches the profile only after the auth session resolves. The spinner condition is `authLoading || (session && profileLoading)`. If the profile fetch fails (profile stays null), AuthGuard still renders children — this is acceptable for MVP.
+
+**`profileStore.clear()` sets `loading: true`** (not false). This prevents a flash where session=true but profile=null and loading=false causes AuthGuard to skip the spinner on logout/re-login.
+
+**Onboarding books upsert:** The `books` table needs an UPDATE RLS policy to allow upsert on conflict (`open_library_id`). This migration was applied as `books_rls_update_policy`.
+
+**Swipe double-fire guard:** `Discover.tsx` uses a `swiping` ref (set true in `triggerSwipe`, reset in `handleCardLeft`) to prevent double swipes from button presses during animation. `onCardLeftScreen` is guarded to only fire for the top card.
+
+**Chat message dedup:** The Realtime subscription and the initial load can race. Messages are merged by ID using a `Map` in `setMessages` to avoid duplicates or lost messages.
 
 ## Implementation status
 
-- **Phase 1 (Setup):** Complete — scaffold, deps, Capacitor, Supabase connected, DB migrated.
-- **Phase 2 (Auth):** Complete — Supabase email/password, auth guard (`src/components/AuthGuard.tsx`), session persistence via Zustand (`src/store/auth.ts`). Login at `src/pages/Login.tsx`, register at `src/pages/Register.tsx`.
-- **Phase 3 (Onboarding):** Complete — 4-step flow in `src/pages/onboarding/`: StepPhotos (upload to `photos` Storage bucket), StepInfo (name/dob/gender/looking_for), StepGenres (min 3), StepBooks (Open Library search, min 1). Profile store in `src/store/profile.ts`. AuthGuard redirects to `/onboarding` when `onboarding_complete = false`.
-- **Phase 4 (Discover):** Complete — `src/pages/Discover.tsx`. Calls `get_candidates()` RPC then fetches profile details; renders swipe stack with `react-tinder-card`. Swipe right = like, left = pass — recorded to `swipes` table. Match detection queries `matches` table after each like; shows a modal on mutual match. Action buttons trigger programmatic swipe via ref.
-- **Phase 5 (Matches + Chat):** Complete — `src/pages/Matches.tsx` (match list with last-message preview, sorted by activity), `src/pages/Chat.tsx` (Realtime subscription via `supabase.channel`, auto-scroll, send on Enter), `src/pages/Profile.tsx` (own profile + sign out). Bottom nav in `src/components/BottomNav.tsx` across Discover/Matches/Profile.
-
-## Planned page structure
-
-```
-src/pages/
-  onboarding/   StepPhotos, StepInfo, StepGenres, StepBooks
-  Discover.tsx  Swipe screen
-  Matches.tsx   Match list with last-message preview
-  Chat.tsx      Conversation with Realtime subscription
-  Profile.tsx   Own profile / settings
-src/components/ Shared UI (SwipeCard, BookSearch, …)
-src/store/      Zustand stores (auth, profile, discover, chat)
-src/lib/
-  supabase.ts       Supabase client (exists)
-  openLibrary.ts    Open Library search wrapper (to create)
-```
+- **Phase 1:** Complete — scaffold, deps, Capacitor, Supabase connected, DB migrated.
+- **Phase 2:** Complete — Supabase email/password auth, `AuthGuard`, Zustand session persistence.
+- **Phase 3:** Complete — 4-step onboarding (`src/pages/onboarding/`): photos upload, info, genres (min 3), books via Open Library (min 1).
+- **Phase 4:** Complete — `Discover.tsx` swipe stack with `react-tinder-card`, swipes recorded, mutual match detection + modal.
+- **Phase 5:** Complete — `Matches.tsx` (last-message preview, unread dot, sorted by activity), `Chat.tsx` (Realtime, auto-scroll, send on Enter), `Profile.tsx` (own profile + sign out), `BottomNav` across Discover/Matches/Profile.

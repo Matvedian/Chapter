@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import AuthGuard from './components/AuthGuard'
+import NotificationListener from './components/NotificationListener'
+import ToastBanner from './components/ToastBanner'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Onboarding from './pages/onboarding'
@@ -12,6 +14,8 @@ import ProfileEdit from './pages/ProfileEdit'
 export default function App() {
   return (
     <BrowserRouter>
+      <NotificationListener />
+      <ToastBanner />
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
