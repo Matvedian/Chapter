@@ -117,7 +117,7 @@ export default function Chat() {
     <div className="h-screen bg-stone-50 flex flex-col overflow-hidden">
 
       {/* Header */}
-      <div className="flex-shrink-0 bg-white border-b border-stone-200 px-4 pt-12 pb-3 flex items-center gap-3">
+      <div className="flex-shrink-0 bg-white border-b border-stone-200 px-4 safe-top pb-3 flex items-center gap-3">
         <button
           onClick={() => navigate('/matches')}
           className="text-3xl text-stone-500 hover:text-stone-900 transition-colors p-1 -ml-1"

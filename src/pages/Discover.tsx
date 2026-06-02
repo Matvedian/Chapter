@@ -171,7 +171,7 @@ export default function Discover() {
     <div className="h-screen bg-stone-100 flex flex-col overflow-hidden">
 
       {/* Header */}
-      <div className="px-6 pt-12 pb-3 flex-shrink-0 flex items-center justify-between">
+      <div className="px-6 safe-top pb-3 flex-shrink-0 flex items-center justify-between">
         <div className="w-8" />
         <h1 className="text-2xl font-bold text-stone-900">Chapter</h1>
         <button

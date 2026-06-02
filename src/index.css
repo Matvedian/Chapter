@@ -8,3 +8,14 @@
   from { transform: translateY(-100%); opacity: 0; }
   to   { transform: translateY(0);     opacity: 1; }
 }
+
+/* iOS safe area utilities */
+.safe-top {
+  padding-top: calc(env(safe-area-inset-top, 0px) + 1.5rem);
+}
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.toast-safe-top {
+  padding-top: calc(env(safe-area-inset-top, 0px) + 0.5rem);
+}

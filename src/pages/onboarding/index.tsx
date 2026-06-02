@@ -99,7 +99,7 @@ export default function Onboarding() {
 
   return (
     <div className="min-h-screen bg-stone-50">
-      <div className="px-6 pt-12 pb-2">
+      <div className="px-6 safe-top pb-2">
         <div className="flex items-center gap-1.5 mb-1">
           {STEPS.map((_, i) => (
             <div

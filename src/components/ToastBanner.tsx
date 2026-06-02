@@ -44,7 +44,7 @@ export default function ToastBanner() {
   if (!toasts.length) return null
 
   return (
-    <div className="fixed top-0 inset-x-0 z-50 px-4 pt-12 flex flex-col gap-2 pointer-events-none">
+    <div className="fixed top-0 inset-x-0 z-50 px-4 toast-safe-top flex flex-col gap-2 pointer-events-none">
       {toasts.map((t) => (
         <div key={t.id} className="pointer-events-auto">
           <ToastCard toast={t} />

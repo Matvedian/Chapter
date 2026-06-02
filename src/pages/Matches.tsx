@@ -85,7 +85,7 @@ export default function Matches() {
 
   return (
     <div className="h-screen bg-stone-50 flex flex-col overflow-hidden">
-      <div className="px-6 pt-12 pb-4 flex-shrink-0">
+      <div className="px-6 safe-top pb-4 flex-shrink-0">
         <h1 className="text-2xl font-bold text-stone-900">Matches</h1>
       </div>
 

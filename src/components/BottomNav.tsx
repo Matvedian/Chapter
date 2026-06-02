@@ -13,7 +13,7 @@ export default function BottomNav() {
   const { unreadCount, clearUnread } = useNotificationStore()
 
   return (
-    <div className="flex-shrink-0 flex border-t border-stone-200 bg-white">
+    <div className="flex-shrink-0 flex border-t border-stone-200 bg-white safe-bottom">
       {TABS.map(tab => {
         const active = tab.path === '/'
           ? pathname === '/'
