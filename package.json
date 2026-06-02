@@ -13,6 +13,7 @@
     "@capacitor/android": "^8.3.4",
     "@capacitor/cli": "^8.3.4",
     "@capacitor/core": "^8.3.4",
+    "@capacitor/haptics": "^8.0.2",
     "@capacitor/ios": "^8.3.4",
     "@react-spring/web": "^10.1.0",
     "@supabase/supabase-js": "^2.106.0",

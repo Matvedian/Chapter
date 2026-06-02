@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import TinderCard from 'react-tinder-card'
+import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics'
 import { useAuthStore } from '../store/auth'
 import { supabase } from '../lib/supabase'
 import BottomNav from '../components/BottomNav'
@@ -129,6 +130,7 @@ export default function Discover() {
   const [showFilters, setShowFilters] = useState(false)
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS)
   const [draft, setDraft] = useState<Filters>(DEFAULT_FILTERS)
+  const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set())
   const topCardRef = useRef<any>(null)
   const swiping = useRef(false)
 
@@ -180,6 +182,7 @@ export default function Discover() {
   const handleSwipe = useCallback(async (direction: string, candidate: Candidate) => {
     setSwipeDir(null)
     const dirValue = direction === 'right' ? 'like' : 'pass'
+    Haptics.impact({ style: dirValue === 'like' ? ImpactStyle.Medium : ImpactStyle.Light })
 
     await supabase.from('swipes').insert({
       swiper_id: user!.id,
@@ -193,7 +196,10 @@ export default function Discover() {
         .select('id')
         .or(`and(user1_id.eq.${user!.id},user2_id.eq.${candidate.id}),and(user1_id.eq.${candidate.id},user2_id.eq.${user!.id})`)
         .maybeSingle()
-      if (match) setMatchName(candidate.name ?? 'Someone')
+      if (match) {
+        Haptics.notification({ type: NotificationType.Success })
+        setMatchName(candidate.name ?? 'Someone')
+      }
     }
   }, [user?.id])
 
@@ -229,8 +235,20 @@ export default function Discover() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-stone-50 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-amber-400 border-t-transparent rounded-full animate-spin" />
+      <div className="h-screen bg-stone-100 flex flex-col overflow-hidden">
+        <div className="px-6 safe-top pb-3 flex-shrink-0 flex items-center justify-between">
+          <div className="w-8" />
+          <h1 className="text-2xl font-bold text-stone-900">Chapter</h1>
+          <div className="w-8" />
+        </div>
+        <div className="flex-1 flex items-center justify-center overflow-hidden">
+          <div className="rounded-3xl skeleton" style={{ width: 320, height: 480 }} />
+        </div>
+        <div className="flex-shrink-0 flex justify-center gap-8 py-5">
+          <div className="w-16 h-16 rounded-full skeleton" />
+          <div className="w-16 h-16 rounded-full skeleton" />
+        </div>
+        <BottomNav />
       </div>
     )
   }
@@ -313,12 +331,18 @@ export default function Discover() {
                     }}
                   >
                     {candidate.photos[0] ? (
-                      <img
-                        src={candidate.photos[0]}
-                        alt=""
-                        className="w-full h-full object-cover"
-                        draggable={false}
-                      />
+                      <>
+                        {!loadedImages.has(candidate.id) && (
+                          <div className="absolute inset-0 skeleton" />
+                        )}
+                        <img
+                          src={candidate.photos[0]}
+                          alt=""
+                          className={`w-full h-full object-cover transition-opacity duration-300 ${loadedImages.has(candidate.id) ? 'opacity-100' : 'opacity-0'}`}
+                          draggable={false}
+                          onLoad={() => setLoadedImages(prev => new Set(prev).add(candidate.id))}
+                        />
+                      </>
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-amber-50">
                         <span className="text-7xl">📖</span>

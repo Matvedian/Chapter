@@ -1,8 +1,20 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/auth'
 import { supabase } from '../lib/supabase'
 import BottomNav from '../components/BottomNav'
+
+function SkeletonRow() {
+  return (
+    <div className="flex items-center gap-4 px-6 py-4">
+      <div className="w-14 h-14 rounded-full skeleton flex-shrink-0" />
+      <div className="flex-1 flex flex-col gap-2.5">
+        <div className="h-3.5 rounded-lg skeleton w-1/3" />
+        <div className="h-3 rounded-lg skeleton w-2/3" />
+      </div>
+    </div>
+  )
+}
 
 interface MatchRow {
   id: string
@@ -35,6 +47,7 @@ export default function Matches() {
   const [items, setItems] = useState<MatchItem[]>([])
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
+  const loadedRef = useRef(false)
 
   const load = useCallback(async () => {
     if (!user) return
@@ -79,9 +92,38 @@ export default function Matches() {
     built.sort((a, b) => new Date(b.lastAt!).getTime() - new Date(a.lastAt!).getTime())
     setItems(built)
     setLoading(false)
+    loadedRef.current = true
   }, [user?.id])
 
   useEffect(() => { load() }, [load])
+
+  // Realtime: update list when a new message arrives in any of the user's matches
+  useEffect(() => {
+    if (!user || !loadedRef.current) return
+
+    const channel = supabase
+      .channel('matches-page:messages')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'messages' },
+        (payload) => {
+          const msg = payload.new as { match_id: string; sender_id: string; content: string; created_at: string }
+          setItems(prev => {
+            const idx = prev.findIndex(i => i.matchId === msg.match_id)
+            if (idx === -1) return prev
+            const updated = prev.map(i =>
+              i.matchId === msg.match_id
+                ? { ...i, lastMessage: msg.content, lastAt: msg.created_at, unread: msg.sender_id !== user.id }
+                : i
+            )
+            return [...updated].sort((a, b) => new Date(b.lastAt!).getTime() - new Date(a.lastAt!).getTime())
+          })
+        },
+      )
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [user?.id, loading])
 
   return (
     <div className="h-screen bg-stone-50 flex flex-col overflow-hidden">
@@ -91,8 +133,8 @@ export default function Matches() {
 
       <div className="flex-1 overflow-y-auto">
         {loading ? (
-          <div className="flex justify-center pt-16">
-            <div className="w-8 h-8 border-4 border-amber-400 border-t-transparent rounded-full animate-spin" />
+          <div className="flex flex-col">
+            {[...Array(5)].map((_, i) => <SkeletonRow key={i} />)}
           </div>
         ) : items.length === 0 ? (
           <div className="text-center px-8 pt-16">
