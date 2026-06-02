@@ -43,6 +43,9 @@ export default function Profile() {
           {profile?.gender && (
             <p className="text-stone-500 text-sm mt-1 capitalize">{profile.gender}</p>
           )}
+          {profile?.bio && (
+            <p className="text-stone-600 text-sm mt-3 text-center leading-relaxed">{profile.bio}</p>
+          )}
         </div>
 
         {/* Edit profile */}

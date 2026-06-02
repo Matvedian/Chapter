@@ -37,6 +37,7 @@ export default function StepInfo({ onNext }: Props) {
   const [birthDate, setBirthDate] = useState('')
   const [gender, setGender] = useState('')
   const [lookingFor, setLookingFor] = useState<string[]>([])
+  const [bio, setBio] = useState('')
   const [ageError, setAgeError] = useState(false)
 
   const toggleLookingFor = (value: string) => {
@@ -49,7 +50,7 @@ export default function StepInfo({ onNext }: Props) {
 
   const handleContinue = () => {
     if (getAge(birthDate) < 18) { setAgeError(true); return }
-    onNext({ name: name.trim(), birthDate, gender, lookingFor })
+    onNext({ name: name.trim(), birthDate, gender, lookingFor, bio })
   }
 
   return (
@@ -121,6 +122,20 @@ export default function StepInfo({ onNext }: Props) {
           </div>
         </div>
       </div>
+
+        <div>
+          <div className="flex items-baseline justify-between mb-1.5">
+            <label className="text-sm font-medium text-stone-700">About me <span className="text-stone-400 font-normal">(optional)</span></label>
+            <span className="text-xs text-stone-400">{bio.length}/300</span>
+          </div>
+          <textarea
+            value={bio}
+            onChange={e => setBio(e.target.value.slice(0, 300))}
+            placeholder="What are you reading lately? What do you love about books?"
+            rows={3}
+            className="w-full px-4 py-3 rounded-xl border border-stone-200 bg-white text-stone-900 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none"
+          />
+        </div>
 
       <button
         onClick={handleContinue}

@@ -46,6 +46,7 @@ export default function ProfileEdit() {
   const [birthDate, setBirthDate] = useState(profile?.birth_date ?? '')
   const [gender, setGender] = useState(profile?.gender ?? '')
   const [lookingFor, setLookingFor] = useState<string[]>(profile?.looking_for ?? [])
+  const [bio, setBio] = useState(profile?.bio ?? '')
   const [infoSaving, setInfoSaving] = useState(false)
   const [infoFeedback, setInfoFeedback] = useState<Feedback>(null)
 
@@ -168,7 +169,7 @@ export default function ProfileEdit() {
     if (!user) return
     setInfoSaving(true)
     const { error } = await supabase.from('profiles').update({
-      name: name.trim(), birth_date: birthDate, gender, looking_for: lookingFor,
+      name: name.trim(), birth_date: birthDate, gender, looking_for: lookingFor, bio: bio.trim() || null,
     }).eq('id', user.id)
     setInfoSaving(false)
     if (!error) { await fetchProfile(user.id); flash(setInfoFeedback, 'saved') }
@@ -218,7 +219,8 @@ export default function ProfileEdit() {
     name.trim() !== (profile?.name ?? '') ||
     birthDate !== (profile?.birth_date ?? '') ||
     gender !== (profile?.gender ?? '') ||
-    JSON.stringify([...lookingFor].sort()) !== JSON.stringify([...(profile?.looking_for ?? [])].sort())
+    JSON.stringify([...lookingFor].sort()) !== JSON.stringify([...(profile?.looking_for ?? [])].sort()) ||
+    bio.trim() !== (profile?.bio ?? '')
   const genresDirty =
     JSON.stringify([...selectedGenres].sort()) !== JSON.stringify([...originalGenres].sort())
   const booksDirty =
@@ -352,6 +354,20 @@ export default function ProfileEdit() {
                 </button>
               ))}
             </div>
+          </div>
+
+          <div>
+            <div className="flex items-baseline justify-between mb-1.5">
+              <label className="text-sm font-medium text-stone-700">About me <span className="text-stone-400 font-normal">(optional)</span></label>
+              <span className="text-xs text-stone-400">{bio.length}/300</span>
+            </div>
+            <textarea
+              value={bio}
+              onChange={e => setBio(e.target.value.slice(0, 300))}
+              placeholder="What are you reading lately? What do you love about books?"
+              rows={3}
+              className="w-full px-4 py-3 rounded-xl border border-stone-200 bg-stone-50 text-stone-900 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none"
+            />
           </div>
 
           {infoFeedback === 'error' && <p className="text-xs text-red-500">Failed to save.</p>}

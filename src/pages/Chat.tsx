@@ -28,6 +28,9 @@ export default function Chat() {
   const [sending, setSending] = useState(false)
   const [sendError, setSendError] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [showMenu, setShowMenu] = useState(false)
+  const [showUnmatchConfirm, setShowUnmatchConfirm] = useState(false)
+  const [unmatching, setUnmatching] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
 
@@ -113,6 +116,13 @@ export default function Chat() {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() }
   }
 
+  const unmatch = async () => {
+    if (!matchId || unmatching) return
+    setUnmatching(true)
+    await supabase.from('matches').delete().eq('id', matchId)
+    navigate('/matches', { replace: true })
+  }
+
   return (
     <div className="h-dvh bg-stone-50 flex flex-col overflow-hidden">
 
@@ -131,6 +141,30 @@ export default function Chat() {
           <div className="w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center text-base">📖</div>
         )}
         <p className="font-semibold text-stone-900 flex-1">{partner.name ?? 'Reader'}</p>
+        <div className="relative">
+          <button
+            onClick={() => setShowMenu(m => !m)}
+            className="w-8 h-8 flex items-center justify-center text-stone-400 hover:text-stone-700 transition-colors"
+            aria-label="More options"
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+              <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
+            </svg>
+          </button>
+          {showMenu && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
+              <div className="absolute right-0 top-10 bg-white rounded-xl shadow-xl border border-stone-100 z-50 min-w-40 overflow-hidden">
+                <button
+                  onClick={() => { setShowMenu(false); setShowUnmatchConfirm(true) }}
+                  className="w-full px-4 py-3 text-left text-sm text-red-500 hover:bg-red-50 transition-colors"
+                >
+                  Unmatch
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Messages */}
@@ -189,6 +223,39 @@ export default function Chat() {
         </button>
       </div>
       </div>
+
+      {/* Unmatch confirmation */}
+      {showUnmatchConfirm && (
+        <div
+          className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-6"
+          onClick={() => setShowUnmatchConfirm(false)}
+        >
+          <div
+            className="bg-white rounded-3xl p-6 max-w-xs w-full shadow-2xl"
+            onClick={e => e.stopPropagation()}
+          >
+            <h2 className="text-lg font-bold text-stone-900 mb-2">Unmatch?</h2>
+            <p className="text-stone-500 text-sm mb-6">
+              This will remove your match with {partner.name ?? 'this person'} and delete the conversation.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowUnmatchConfirm(false)}
+                className="flex-1 py-2.5 rounded-xl border border-stone-200 text-stone-600 font-semibold text-sm hover:bg-stone-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={unmatch}
+                disabled={unmatching}
+                className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold text-sm transition-colors disabled:opacity-50"
+              >
+                {unmatching ? 'Removing…' : 'Unmatch'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

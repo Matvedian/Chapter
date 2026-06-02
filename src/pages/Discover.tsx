@@ -12,6 +12,15 @@ interface Candidate {
   photos: string[]
   score: number
   gender: string | null
+  bio: string | null
+}
+
+interface ProfileModal {
+  candidate: Candidate
+  genres: string[]
+  books: { title: string; author: string; cover_url: string | null }[]
+  loadingExtra: boolean
+  photoIndex: number
 }
 
 interface Filters {
@@ -131,6 +140,8 @@ export default function Discover() {
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS)
   const [draft, setDraft] = useState<Filters>(DEFAULT_FILTERS)
   const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set())
+  const [cardPhotoIndex, setCardPhotoIndex] = useState<Map<string, number>>(new Map())
+  const [profileModal, setProfileModal] = useState<ProfileModal | null>(null)
   const topCardRef = useRef<any>(null)
   const swiping = useRef(false)
 
@@ -147,7 +158,7 @@ export default function Discover() {
 
     const { data: profiles } = await supabase
       .from('profiles')
-      .select('id, name, birth_date, photos, gender')
+      .select('id, name, birth_date, photos, gender, bio')
       .in('id', ids)
 
     if (!profiles?.length) { setLoading(false); return }
@@ -162,6 +173,7 @@ export default function Discover() {
           photos: p.photos ?? [],
           score: scoreMap[id] ?? 0,
           gender: p.gender ?? null,
+          bio: p.bio ?? null,
         } : null
       })
       .filter((c): c is Candidate => c !== null)
@@ -231,6 +243,29 @@ export default function Discover() {
       ...d,
       genders: d.genders.includes(g) ? d.genders.filter(x => x !== g) : [...d.genders, g],
     }))
+  }
+
+  const navigatePhoto = (candidateId: string, photos: string[], dir: 1 | -1) => {
+    setCardPhotoIndex(prev => {
+      const m = new Map(prev)
+      const cur = m.get(candidateId) ?? 0
+      m.set(candidateId, Math.max(0, Math.min(photos.length - 1, cur + dir)))
+      return m
+    })
+  }
+
+  const openProfile = async (candidate: Candidate) => {
+    setProfileModal({ candidate, genres: [], books: [], loadingExtra: true, photoIndex: 0 })
+    const [{ data: ugData }, { data: ubData }] = await Promise.all([
+      supabase.from('user_genres').select('genres(name)').eq('user_id', candidate.id),
+      supabase.from('user_books').select('books(title, author, cover_url)').eq('user_id', candidate.id).eq('shelf', 'favorite'),
+    ])
+    setProfileModal(prev => prev ? {
+      ...prev,
+      genres: ((ugData ?? []) as any[]).map(r => r.genres?.name).filter(Boolean),
+      books: ((ubData ?? []) as any[]).map(r => r.books).filter(Boolean),
+      loadingExtra: false,
+    } : null)
   }
 
   if (loading) {
@@ -305,6 +340,9 @@ export default function Discover() {
             {candidates.map((candidate, index) => {
               if (index < currentIndex - 1 || index > currentIndex) return null
               const isTop = index === currentIndex
+              const photoIdx = cardPhotoIndex.get(candidate.id) ?? 0
+              const photoUrl = candidate.photos[photoIdx] ?? null
+              const imgKey = photoUrl ?? `${candidate.id}:nophoto`
 
               return (
                 <TinderCard
@@ -330,18 +368,40 @@ export default function Discover() {
                       transition: 'transform 0.2s ease',
                     }}
                   >
-                    {candidate.photos[0] ? (
+                    {photoUrl ? (
                       <>
-                        {!loadedImages.has(candidate.id) && (
+                        {!loadedImages.has(imgKey) && (
                           <div className="absolute inset-0 skeleton" />
                         )}
                         <img
-                          src={candidate.photos[0]}
+                          src={photoUrl}
                           alt=""
-                          className={`w-full h-full object-cover transition-opacity duration-300 ${loadedImages.has(candidate.id) ? 'opacity-100' : 'opacity-0'}`}
+                          className={`w-full h-full object-cover transition-opacity duration-300 ${loadedImages.has(imgKey) ? 'opacity-100' : 'opacity-0'}`}
                           draggable={false}
-                          onLoad={() => setLoadedImages(prev => new Set(prev).add(candidate.id))}
+                          onLoad={() => setLoadedImages(prev => new Set(prev).add(imgKey))}
                         />
+                        {candidate.photos.length > 1 && (
+                          <div className="absolute top-3 left-0 right-0 flex justify-center gap-1.5 z-10 pointer-events-none">
+                            {candidate.photos.map((_, i) => (
+                              <div
+                                key={i}
+                                className={`h-1 rounded-full transition-all duration-200 ${i === photoIdx ? 'w-5 bg-white' : 'w-1.5 bg-white/50'}`}
+                              />
+                            ))}
+                          </div>
+                        )}
+                        {isTop && candidate.photos.length > 1 && (
+                          <>
+                            <div
+                              className="absolute left-0 top-0 w-1/3 h-4/5 z-10"
+                              onClick={() => navigatePhoto(candidate.id, candidate.photos, -1)}
+                            />
+                            <div
+                              className="absolute right-0 top-0 w-1/3 h-4/5 z-10"
+                              onClick={() => navigatePhoto(candidate.id, candidate.photos, 1)}
+                            />
+                          </>
+                        )}
                       </>
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-amber-50">
@@ -362,17 +422,30 @@ export default function Discover() {
                       </div>
                     )}
 
-                    <div className="absolute bottom-0 left-0 right-0 p-5 pointer-events-none">
+                    <div className="absolute bottom-0 left-0 right-0 p-5 z-20">
                       <div className="flex items-end justify-between">
-                        <p className="text-xl font-bold text-white leading-snug">
+                        <p className="text-xl font-bold text-white leading-snug pointer-events-none">
                           {candidate.name ?? 'Reader'}
                           {candidate.birth_date ? `, ${getAge(candidate.birth_date)}` : ''}
                         </p>
-                        {candidate.score > 0 && (
-                          <span className="bg-amber-400 text-stone-900 text-xs font-bold px-2.5 py-1 rounded-full ml-2 shrink-0">
-                            📚 {candidate.score}
-                          </span>
-                        )}
+                        <div className="flex items-center gap-2 shrink-0">
+                          {candidate.score > 0 && (
+                            <span className="bg-amber-400 text-stone-900 text-xs font-bold px-2.5 py-1 rounded-full pointer-events-none">
+                              📚 {candidate.score}
+                            </span>
+                          )}
+                          {isTop && (
+                            <button
+                              onClick={e => { e.stopPropagation(); openProfile(candidate) }}
+                              className="w-9 h-9 rounded-full bg-white/25 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/40 transition-colors"
+                              aria-label="View profile"
+                            >
+                              <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+                              </svg>
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -426,6 +499,119 @@ export default function Discover() {
             >
               Keep swiping
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Profile modal */}
+      {profileModal && (
+        <div
+          className="fixed inset-0 bg-black/60 z-50 flex items-end"
+          onClick={() => setProfileModal(null)}
+        >
+          <div
+            className="w-full bg-white rounded-t-3xl overflow-hidden flex flex-col"
+            style={{ maxHeight: '90vh' }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Photo carousel */}
+            <div className="relative flex-shrink-0" style={{ height: 360 }}>
+              {profileModal.candidate.photos.length > 0 ? (
+                <>
+                  <img
+                    src={profileModal.candidate.photos[profileModal.photoIndex]}
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
+                  {profileModal.candidate.photos.length > 1 && (
+                    <>
+                      <div className="absolute top-3 left-0 right-0 flex justify-center gap-1.5 pointer-events-none">
+                        {profileModal.candidate.photos.map((_, i) => (
+                          <div
+                            key={i}
+                            className={`h-1 rounded-full transition-all duration-200 ${i === profileModal.photoIndex ? 'w-5 bg-white' : 'w-1.5 bg-white/50'}`}
+                          />
+                        ))}
+                      </div>
+                      <button
+                        className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/30 rounded-full flex items-center justify-center text-white text-2xl leading-none"
+                        onClick={() => setProfileModal(p => p && p.photoIndex > 0 ? { ...p, photoIndex: p.photoIndex - 1 } : p)}
+                      >‹</button>
+                      <button
+                        className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/30 rounded-full flex items-center justify-center text-white text-2xl leading-none"
+                        onClick={() => setProfileModal(p => p && p.photoIndex < p.candidate.photos.length - 1 ? { ...p, photoIndex: p.photoIndex + 1 } : p)}
+                      >›</button>
+                    </>
+                  )}
+                </>
+              ) : (
+                <div className="w-full h-full bg-amber-50 flex items-center justify-center">
+                  <span className="text-7xl">📖</span>
+                </div>
+              )}
+              <button
+                onClick={() => setProfileModal(null)}
+                className="absolute top-4 right-4 w-9 h-9 bg-black/30 rounded-full flex items-center justify-center text-white text-2xl leading-none"
+                aria-label="Close"
+              >×</button>
+            </div>
+
+            {/* Info */}
+            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+              <div>
+                <h2 className="text-2xl font-bold text-stone-900">
+                  {profileModal.candidate.name ?? 'Reader'}
+                  {profileModal.candidate.birth_date ? `, ${getAge(profileModal.candidate.birth_date)}` : ''}
+                </h2>
+                {profileModal.candidate.gender && (
+                  <p className="text-stone-500 text-sm capitalize mt-0.5">{profileModal.candidate.gender}</p>
+                )}
+              </div>
+
+              {profileModal.candidate.bio && (
+                <p className="text-stone-700 text-sm leading-relaxed">{profileModal.candidate.bio}</p>
+              )}
+
+              {profileModal.loadingExtra ? (
+                <div className="flex justify-center py-4">
+                  <div className="w-5 h-5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : (
+                <>
+                  {profileModal.genres.length > 0 && (
+                    <div>
+                      <p className="text-xs font-semibold text-stone-400 uppercase tracking-wide mb-2">Genres</p>
+                      <div className="flex flex-wrap gap-2">
+                        {profileModal.genres.map(g => (
+                          <span key={g} className="px-3 py-1 bg-amber-50 text-amber-800 rounded-full text-sm font-medium">{g}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {profileModal.books.length > 0 && (
+                    <div>
+                      <p className="text-xs font-semibold text-stone-400 uppercase tracking-wide mb-2">Favourite books</p>
+                      <div className="space-y-2">
+                        {profileModal.books.map((b, i) => (
+                          <div key={i} className="flex items-center gap-3">
+                            {b.cover_url ? (
+                              <img src={b.cover_url} alt="" className="w-10 h-14 object-cover rounded shadow" />
+                            ) : (
+                              <div className="w-10 h-14 bg-stone-100 rounded shadow flex items-center justify-center text-lg">📖</div>
+                            )}
+                            <div>
+                              <p className="text-sm font-medium text-stone-900">{b.title}</p>
+                              <p className="text-xs text-stone-500">{b.author}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+              <div className="h-4" />
+            </div>
           </div>
         </div>
       )}
