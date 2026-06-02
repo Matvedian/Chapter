@@ -48,6 +48,76 @@ function filtersActive(f: Filters): boolean {
     || f.genders.length > 0
 }
 
+function DualRangeSlider({ min, max, low, high, onChange }: {
+  min: number; max: number; low: number; high: number
+  onChange: (low: number, high: number) => void
+}) {
+  const trackRef = useRef<HTMLDivElement>(null)
+  const dragging = useRef<'low' | 'high' | null>(null)
+
+  const pct = (v: number) => ((v - min) / (max - min)) * 100
+
+  const valueFromX = (clientX: number) => {
+    const rect = trackRef.current!.getBoundingClientRect()
+    const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
+    return Math.round(min + ratio * (max - min))
+  }
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    const v = valueFromX(e.clientX)
+    dragging.current = Math.abs(v - low) <= Math.abs(v - high) ? 'low' : 'high';
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+    if (dragging.current === 'low') onChange(Math.min(v, high - 1), high)
+    else onChange(low, Math.max(v, low + 1))
+  }
+
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (!dragging.current) return
+    const v = valueFromX(e.clientX)
+    if (dragging.current === 'low') onChange(Math.min(v, high - 1), high)
+    else onChange(low, Math.max(v, low + 1))
+  }
+
+  const lowPct = pct(low)
+  const highPct = pct(high)
+
+  return (
+    <div className="pt-2 pb-5">
+      <div
+        ref={trackRef}
+        className="relative h-8 flex items-center cursor-pointer select-none"
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={() => { dragging.current = null }}
+      >
+        <div className="absolute left-0 right-0 h-1.5 bg-stone-200 rounded-full" />
+        <div
+          className="absolute h-1.5 bg-amber-400 rounded-full"
+          style={{ left: `${lowPct}%`, right: `${100 - highPct}%` }}
+        />
+        <div
+          className="absolute w-6 h-6 bg-white rounded-full border-2 border-amber-400 shadow"
+          style={{ left: `${lowPct}%`, transform: 'translateX(-50%)' }}
+        />
+        <div
+          className="absolute w-6 h-6 bg-white rounded-full border-2 border-amber-400 shadow"
+          style={{ left: `${highPct}%`, transform: 'translateX(-50%)' }}
+        />
+      </div>
+      <div className="relative h-4">
+        <span
+          className="absolute text-xs font-medium text-stone-600 -translate-x-1/2"
+          style={{ left: `${lowPct}%` }}
+        >{low}</span>
+        <span
+          className="absolute text-xs font-medium text-stone-600 -translate-x-1/2"
+          style={{ left: `${highPct}%` }}
+        >{high}</span>
+      </div>
+    </div>
+  )
+}
+
 export default function Discover() {
   const { user } = useAuthStore()
   const [allCandidates, setAllCandidates] = useState<Candidate[]>([])
@@ -359,37 +429,15 @@ export default function Discover() {
             </div>
 
             {/* Age range */}
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold text-stone-700">Age range</p>
-                <p className="text-sm text-stone-500">{draft.minAge} – {draft.maxAge}</p>
-              </div>
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-3">
-                  <span className="text-xs text-stone-400 w-6">Min</span>
-                  <input
-                    type="range"
-                    min={18}
-                    max={draft.maxAge}
-                    value={draft.minAge}
-                    onChange={e => setDraft(d => ({ ...d, minAge: Number(e.target.value) }))}
-                    className="flex-1 accent-amber-400"
-                  />
-                  <span className="text-xs text-stone-700 w-6 text-right">{draft.minAge}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-xs text-stone-400 w-6">Max</span>
-                  <input
-                    type="range"
-                    min={draft.minAge}
-                    max={80}
-                    value={draft.maxAge}
-                    onChange={e => setDraft(d => ({ ...d, maxAge: Number(e.target.value) }))}
-                    className="flex-1 accent-amber-400"
-                  />
-                  <span className="text-xs text-stone-700 w-6 text-right">{draft.maxAge}</span>
-                </div>
-              </div>
+            <div className="flex flex-col gap-1">
+              <p className="text-sm font-semibold text-stone-700">Age range</p>
+              <DualRangeSlider
+                min={18}
+                max={80}
+                low={draft.minAge}
+                high={draft.maxAge}
+                onChange={(lo, hi) => setDraft(d => ({ ...d, minAge: lo, maxAge: hi }))}
+              />
             </div>
 
             {/* Gender */}
