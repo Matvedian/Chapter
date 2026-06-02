@@ -119,7 +119,8 @@ export default function Chat() {
   const unmatch = async () => {
     if (!matchId || unmatching) return
     setUnmatching(true)
-    await supabase.from('matches').delete().eq('id', matchId)
+    const { error } = await supabase.from('matches').delete().eq('id', matchId)
+    if (error) { setUnmatching(false); return }
     navigate('/matches', { replace: true })
   }
 

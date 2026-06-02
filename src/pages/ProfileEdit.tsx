@@ -66,6 +66,7 @@ export default function ProfileEdit() {
   const [booksSaving, setBooksSaving] = useState(false)
   const [booksFeedback, setBooksFeedback] = useState<Feedback>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const flashTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
 
   // Load genres + user's current genre selections
   useEffect(() => {
@@ -113,9 +114,10 @@ export default function ProfileEdit() {
   }, [bookQuery])
 
   // ── Helpers ───────────────────────────────────────────────
-  const flash = (set: (v: Feedback) => void, value: Feedback) => {
+  const flash = (key: string, set: (v: Feedback) => void, value: Feedback) => {
+    clearTimeout(flashTimers.current[key])
     set(value)
-    setTimeout(() => set(null), 2000)
+    flashTimers.current[key] = setTimeout(() => set(null), 2000)
   }
 
   const toggleLookingFor = (value: string) =>
@@ -142,16 +144,17 @@ export default function ProfileEdit() {
   const handlePhotoUpload = async (files: FileList | null) => {
     if (!files || !user) return
     setPhotoUploading(true)
-    const newUrls: string[] = []
-    for (const file of Array.from(files).slice(0, 6 - photos.length)) {
-      const ext = file.name.split('.').pop()
-      const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-      const { error } = await supabase.storage.from('photos').upload(path, file)
-      if (!error) {
-        const { data } = supabase.storage.from('photos').getPublicUrl(path)
-        newUrls.push(data.publicUrl)
-      }
-    }
+    const filesToUpload = Array.from(files).slice(0, 6 - photos.length)
+    const results = await Promise.all(
+      filesToUpload.map(async file => {
+        const ext = file.name.split('.').pop()
+        const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+        const { error } = await supabase.storage.from('photos').upload(path, file)
+        if (error) return null
+        return supabase.storage.from('photos').getPublicUrl(path).data.publicUrl
+      })
+    )
+    const newUrls = results.filter((url): url is string => url !== null)
     setPhotos(prev => [...prev, ...newUrls])
     setPhotoUploading(false)
   }
@@ -161,8 +164,8 @@ export default function ProfileEdit() {
     setPhotosSaving(true)
     const { error } = await supabase.from('profiles').update({ photos }).eq('id', user.id)
     setPhotosSaving(false)
-    if (!error) { await fetchProfile(user.id); flash(setPhotosFeedback, 'saved') }
-    else flash(setPhotosFeedback, 'error')
+    if (!error) { await fetchProfile(user.id); flash('photos', setPhotosFeedback, 'saved') }
+    else flash('photos', setPhotosFeedback, 'error')
   }
 
   const saveInfo = async () => {
@@ -172,8 +175,8 @@ export default function ProfileEdit() {
       name: name.trim(), birth_date: birthDate, gender, looking_for: lookingFor, bio: bio.trim() || null,
     }).eq('id', user.id)
     setInfoSaving(false)
-    if (!error) { await fetchProfile(user.id); flash(setInfoFeedback, 'saved') }
-    else flash(setInfoFeedback, 'error')
+    if (!error) { await fetchProfile(user.id); flash('info', setInfoFeedback, 'saved') }
+    else flash('info', setInfoFeedback, 'error')
   }
 
   const saveGenres = async () => {
@@ -184,33 +187,42 @@ export default function ProfileEdit() {
       ? await supabase.from('user_genres').insert(selectedGenres.map(genre_id => ({ user_id: user.id, genre_id })))
       : { error: null }
     setGenresSaving(false)
-    if (!error) { setOriginalGenres([...selectedGenres]); flash(setGenresFeedback, 'saved') }
-    else flash(setGenresFeedback, 'error')
+    if (!error) { setOriginalGenres([...selectedGenres]); flash('genres', setGenresFeedback, 'saved') }
+    else flash('genres', setGenresFeedback, 'error')
   }
 
   const saveBooks = async () => {
     if (!user) return
     setBooksSaving(true)
     await supabase.from('user_books').delete().eq('user_id', user.id).eq('shelf', 'favorite')
-    let saveError = false
-    for (const book of selectedBooks) {
-      const { data: bookRow } = await supabase
-        .from('books')
-        .upsert(
-          { open_library_id: book.open_library_id, title: book.title, author: book.author, cover_url: book.cover_url },
-          { onConflict: 'open_library_id' }
-        )
-        .select('id')
-        .single()
-      if (bookRow) {
-        await supabase.from('user_books').insert({ user_id: user.id, book_id: bookRow.id, shelf: 'favorite' })
-      } else {
-        saveError = true
-      }
+
+    const upsertResults = await Promise.all(
+      selectedBooks.map(book =>
+        supabase
+          .from('books')
+          .upsert(
+            { open_library_id: book.open_library_id, title: book.title, author: book.author, cover_url: book.cover_url },
+            { onConflict: 'open_library_id' }
+          )
+          .select('id')
+          .single()
+      )
+    )
+    const bookIds = upsertResults.map(r => r.data?.id).filter((id): id is string => id != null)
+
+    if (bookIds.length > 0) {
+      await supabase.from('user_books').insert(
+        bookIds.map(book_id => ({ user_id: user.id, book_id, shelf: 'favorite' }))
+      )
     }
+
     setBooksSaving(false)
-    if (!saveError) { setOriginalBookIds(selectedBooks.map(b => b.open_library_id)); flash(setBooksFeedback, 'saved') }
-    else flash(setBooksFeedback, 'error')
+    if (bookIds.length === selectedBooks.length) {
+      setOriginalBookIds(selectedBooks.map(b => b.open_library_id))
+      flash('books', setBooksFeedback, 'saved')
+    } else {
+      flash('books', setBooksFeedback, 'error')
+    }
   }
 
   // ── Dirty checks ──────────────────────────────────────────

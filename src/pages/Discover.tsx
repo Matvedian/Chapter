@@ -144,6 +144,7 @@ export default function Discover() {
   const [profileModal, setProfileModal] = useState<ProfileModal | null>(null)
   const topCardRef = useRef<any>(null)
   const swiping = useRef(false)
+  const profileLoadRef = useRef<string | null>(null)
 
   const loadCandidates = useCallback(async () => {
     if (!user) return
@@ -255,11 +256,13 @@ export default function Discover() {
   }
 
   const openProfile = async (candidate: Candidate) => {
+    profileLoadRef.current = candidate.id
     setProfileModal({ candidate, genres: [], books: [], loadingExtra: true, photoIndex: 0 })
     const [{ data: ugData }, { data: ubData }] = await Promise.all([
       supabase.from('user_genres').select('genres(name)').eq('user_id', candidate.id),
       supabase.from('user_books').select('books(title, author, cover_url)').eq('user_id', candidate.id).eq('shelf', 'favorite'),
     ])
+    if (profileLoadRef.current !== candidate.id) return
     setProfileModal(prev => prev ? {
       ...prev,
       genres: ((ugData ?? []) as any[]).map(r => r.genres?.name).filter(Boolean),
