@@ -67,7 +67,7 @@ supabase.rpc('get_candidates', { p_user_id: user.id })
 
 - **Phase 1:** Complete — scaffold, deps, Capacitor, Supabase connected, DB migrated.
 - **Phase 2:** Complete — Supabase email/password auth, `AuthGuard`, Zustand session persistence.
-- **Phase 3:** Complete — 4-step onboarding (`src/pages/onboarding/`): Info (name/dob/gender/looking_for), Photos upload, Genres (min 3), Books via Open Library (min 1). Under-18 users are blocked at the Info step with an error message.
+- **Phase 3:** Complete — 4-step onboarding (`src/pages/onboarding/`): Info (name/dob/gender/looking_for), Photos upload, Genres (min 3, skippable), Books via Open Library (min 1, skippable). Under-18 users are blocked at the Info step with an error message.
 - **Phase 4:** Complete — `Discover.tsx` swipe stack with `react-tinder-card`, swipes recorded, mutual match detection + modal.
 - **Phase 5:** Complete — `Matches.tsx` (last-message preview, unread dot, sorted by activity), `Chat.tsx` (Realtime, auto-scroll, send on Enter), `Profile.tsx` (own profile + sign out), `BottomNav` across Discover/Matches/Profile.
 - **Phase 6:** Complete — profile editing (`ProfileEdit.tsx`): photos, info, genres, books all editable post-onboarding.
