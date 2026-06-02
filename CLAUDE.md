@@ -37,7 +37,7 @@ All tables have RLS enabled.
 
 | Table | Purpose |
 |---|---|
-| `profiles` | Extends `auth.users`. Columns: `name`, `birth_date`, `photos text[]`, `gender`, `looking_for text[]`, `onboarding_complete` |
+| `profiles` | Extends `auth.users`. Columns: `name`, `birth_date`, `photos text[]`, `gender`, `looking_for text[]`, `onboarding_complete`, `bio text` |
 | `genres` | Lookup table, 20 genres, public read |
 | `user_genres` | User ↔ genre join table |
 | `books` | Cached from Open Library. `open_library_id` is unique. |
@@ -75,4 +75,5 @@ supabase.rpc('get_candidates', { p_user_id: user.id })
 - **Discover filters:** Complete — filter sheet (dual-thumb age range slider + gender toggles) with draft/apply pattern. Candidates fetched once, filtered client-side. Active filter dot on header icon; empty state with reset shortcut.
 - **Polish pass:** Complete — haptic feedback on swipe (light=pass, medium=like, success=match); skeleton loaders on Discover (full card layout) and Matches (shimmer rows); photo shimmer on swipe cards; Matches list updates in real-time via Realtime subscription; Chat uses `h-dvh` so input stays above iOS keyboard; iOS safe areas applied to all headers and BottomNav.
 - **Genres:** "Children's" replaced with "Erotica" directly in the `genres` table (id 15). 20 genres total.
+- **Phase 7:** Complete — multiple photos on swipe cards (dot indicators + tap left/right edge to navigate); full profile modal (tap ℹ button → photo carousel, bio, genres, favourite books fetched lazily); bio/about-me field in onboarding, profile edit, and own profile page; unmatch in Chat (three-dot menu → confirmation modal → DELETE match → back to /matches).
 - **Capacitor/iOS:** `base: './'` added to `vite.config.ts` for correct asset paths. `@react-spring/web` installed (peer dep of `react-tinder-card`).
