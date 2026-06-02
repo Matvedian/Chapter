@@ -60,6 +60,12 @@ export default function StepGenres({ onNext }: Props) {
       >
         Continue
       </button>
+      <button
+        onClick={() => onNext({ genreIds: [] })}
+        className="w-full py-2 mt-3 text-sm text-stone-400 hover:text-stone-600 transition-colors"
+      >
+        Skip for now
+      </button>
     </div>
   )
 }

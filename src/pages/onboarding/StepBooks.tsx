@@ -132,6 +132,13 @@ export default function StepBooks({ onNext, submitting }: Props) {
       >
         {submitting ? 'Saving…' : 'Finish'}
       </button>
+      <button
+        onClick={() => onNext({ books: [] })}
+        disabled={submitting}
+        className="w-full py-2 mt-3 text-sm text-stone-400 hover:text-stone-600 transition-colors disabled:opacity-40"
+      >
+        Skip for now
+      </button>
     </div>
   )
 }
