@@ -72,3 +72,4 @@ supabase.rpc('get_candidates', { p_user_id: user.id })
 - **Phase 5:** Complete — `Matches.tsx` (last-message preview, unread dot, sorted by activity), `Chat.tsx` (Realtime, auto-scroll, send on Enter), `Profile.tsx` (own profile + sign out), `BottomNav` across Discover/Matches/Profile.
 - **Phase 6:** Complete — profile editing (`ProfileEdit.tsx`): photos, info, genres, books all editable post-onboarding.
 - **Notifications:** Complete — `NotificationListener` (global Realtime subscriber for new matches/messages), `ToastBanner` (slide-in toast, 4s auto-dismiss, tappable to chat), `BottomNav` unread badge. Toasts suppressed when already in target chat; match toasts suppressed on Discover (has its own modal).
+- **Discover filters:** Complete — filter sheet (age range sliders + gender toggles) with draft/apply pattern. Candidates fetched once, filtered client-side. Active filter dot on header icon; empty state with reset shortcut.
