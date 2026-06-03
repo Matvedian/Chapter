@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { searchBooks, coverUrl } from '../../lib/openLibrary'
-import type { OLBook } from '../../lib/openLibrary'
+import { searchBooks } from '../../lib/bookSearch'
+import type { BookResult } from '../../lib/bookSearch'
 import type { OnboardingData, SelectedBook } from './index'
 
 interface Props {
@@ -10,7 +10,7 @@ interface Props {
 
 export default function StepBooks({ onNext, submitting }: Props) {
   const [query, setQuery] = useState('')
-  const [results, setResults] = useState<OLBook[]>([])
+  const [results, setResults] = useState<BookResult[]>([])
   const [searching, setSearching] = useState(false)
   const [selected, setSelected] = useState<SelectedBook[]>([])
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -30,17 +30,18 @@ export default function StepBooks({ onNext, submitting }: Props) {
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
   }, [query])
 
-  const isSelected = (key: string) => selected.some(b => b.open_library_id === key)
+  const isSelected = (id: string) => selected.some(b => b.external_id === id)
 
-  const toggle = (book: OLBook) => {
-    if (isSelected(book.key)) {
-      setSelected(prev => prev.filter(b => b.open_library_id !== book.key))
+  const toggle = (book: BookResult) => {
+    if (isSelected(book.external_id)) {
+      setSelected(prev => prev.filter(b => b.external_id !== book.external_id))
     } else {
       setSelected(prev => [...prev, {
-        open_library_id: book.key,
+        source: book.source,
+        external_id: book.external_id,
         title: book.title,
-        author: book.author_name?.[0] ?? '',
-        cover_url: book.cover_i ? coverUrl(book.cover_i) : null,
+        author: book.author,
+        cover_url: book.cover_url,
       }])
     }
   }
@@ -54,8 +55,8 @@ export default function StepBooks({ onNext, submitting }: Props) {
         <div className="flex gap-3 overflow-x-auto pb-3 mb-6 -mx-6 px-6">
           {selected.map(book => (
             <button
-              key={book.open_library_id}
-              onClick={() => setSelected(prev => prev.filter(b => b.open_library_id !== book.open_library_id))}
+              key={book.external_id}
+              onClick={() => setSelected(prev => prev.filter(b => b.external_id !== book.external_id))}
               className="flex-shrink-0 relative w-16"
             >
               {book.cover_url ? (
@@ -89,17 +90,17 @@ export default function StepBooks({ onNext, submitting }: Props) {
         <div className="space-y-2 mb-8">
           {results.map(book => (
             <button
-              key={book.key}
+              key={book.external_id}
               onClick={() => toggle(book)}
               className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-colors text-left ${
-                isSelected(book.key)
+                isSelected(book.external_id)
                   ? 'border-amber-400 bg-amber-50'
                   : 'border-stone-200 bg-white hover:border-amber-300'
               }`}
             >
-              {book.cover_i ? (
+              {book.cover_url ? (
                 <img
-                  src={coverUrl(book.cover_i, 'S')}
+                  src={book.cover_url}
                   alt=""
                   className="w-10 h-14 object-cover rounded flex-shrink-0"
                 />
@@ -108,14 +109,11 @@ export default function StepBooks({ onNext, submitting }: Props) {
               )}
               <div className="min-w-0">
                 <p className="text-sm font-medium text-stone-900 truncate">{book.title}</p>
-                {book.author_name?.[0] && (
-                  <p className="text-xs text-stone-500 truncate">{book.author_name[0]}</p>
-                )}
-                {book.first_publish_year && (
-                  <p className="text-xs text-stone-400">{book.first_publish_year}</p>
+                {book.author && (
+                  <p className="text-xs text-stone-500 truncate">{book.author}</p>
                 )}
               </div>
-              {isSelected(book.key) && (
+              {isSelected(book.external_id) && (
                 <div className="ml-auto flex-shrink-0 w-5 h-5 rounded-full bg-amber-400 flex items-center justify-center text-stone-900 text-xs">
                   ✓
                 </div>

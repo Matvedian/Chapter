@@ -3,11 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/auth'
 import { useProfileStore } from '../store/profile'
 import { supabase } from '../lib/supabase'
-import { searchBooks, coverUrl } from '../lib/openLibrary'
-import type { OLBook } from '../lib/openLibrary'
+import { searchBooks } from '../lib/bookSearch'
+import type { BookResult } from '../lib/bookSearch'
 
 interface Genre { id: number; name: string }
-interface BookItem { open_library_id: string; title: string; author: string; cover_url: string | null }
+interface BookItem { source: string; external_id: string; title: string; author: string; cover_url: string | null }
 
 const GENDERS = [
   { value: 'man', label: 'Man' },
@@ -61,7 +61,7 @@ export default function ProfileEdit() {
   const [selectedBooks, setSelectedBooks] = useState<BookItem[]>([])
   const [originalBookIds, setOriginalBookIds] = useState<string[]>([])
   const [bookQuery, setBookQuery] = useState('')
-  const [bookResults, setBookResults] = useState<OLBook[]>([])
+  const [bookResults, setBookResults] = useState<BookResult[]>([])
   const [bookSearching, setBookSearching] = useState(false)
   const [booksSaving, setBooksSaving] = useState(false)
   const [booksFeedback, setBooksFeedback] = useState<Feedback>(null)
@@ -87,7 +87,7 @@ export default function ProfileEdit() {
     if (!user) return
     supabase
       .from('user_books')
-      .select('books(open_library_id, title, author, cover_url)')
+      .select('books(source, external_id, title, author, cover_url)')
       .eq('user_id', user.id)
       .eq('shelf', 'favorite')
       .then(({ data }) => {
@@ -96,7 +96,7 @@ export default function ProfileEdit() {
           .map((r: any) => r.books as BookItem | null)
           .filter((b): b is BookItem => b !== null)
         setSelectedBooks(books)
-        setOriginalBookIds(books.map(b => b.open_library_id))
+        setOriginalBookIds(books.map(b => b.external_id))
       })
   }, [user?.id])
 
@@ -126,16 +126,17 @@ export default function ProfileEdit() {
   const toggleGenre = (id: number) =>
     setSelectedGenres(prev => prev.includes(id) ? prev.filter(g => g !== id) : [...prev, id])
 
-  const toggleBook = (book: OLBook) => {
-    const id = book.key
-    if (selectedBooks.some(b => b.open_library_id === id)) {
-      setSelectedBooks(prev => prev.filter(b => b.open_library_id !== id))
+  const toggleBook = (book: BookResult) => {
+    const id = book.external_id
+    if (selectedBooks.some(b => b.external_id === id)) {
+      setSelectedBooks(prev => prev.filter(b => b.external_id !== id))
     } else {
       setSelectedBooks(prev => [...prev, {
-        open_library_id: id,
+        source: book.source,
+        external_id: id,
         title: book.title,
-        author: book.author_name?.[0] ?? '',
-        cover_url: book.cover_i ? coverUrl(book.cover_i) : null,
+        author: book.author,
+        cover_url: book.cover_url,
       }])
     }
   }
@@ -201,8 +202,8 @@ export default function ProfileEdit() {
         supabase
           .from('books')
           .upsert(
-            { open_library_id: book.open_library_id, title: book.title, author: book.author, cover_url: book.cover_url },
-            { onConflict: 'open_library_id' }
+            { source: book.source, external_id: book.external_id, title: book.title, author: book.author, cover_url: book.cover_url },
+            { onConflict: 'source,external_id' }
           )
           .select('id')
           .single()
@@ -218,7 +219,7 @@ export default function ProfileEdit() {
 
     setBooksSaving(false)
     if (bookIds.length === selectedBooks.length) {
-      setOriginalBookIds(selectedBooks.map(b => b.open_library_id))
+      setOriginalBookIds(selectedBooks.map(b => b.external_id))
       flash('books', setBooksFeedback, 'saved')
     } else {
       flash('books', setBooksFeedback, 'error')
@@ -236,7 +237,7 @@ export default function ProfileEdit() {
   const genresDirty =
     JSON.stringify([...selectedGenres].sort()) !== JSON.stringify([...originalGenres].sort())
   const booksDirty =
-    JSON.stringify([...selectedBooks.map(b => b.open_library_id)].sort()) !==
+    JSON.stringify([...selectedBooks.map(b => b.external_id)].sort()) !==
     JSON.stringify([...originalBookIds].sort())
 
   if (!profile || !user) return null
@@ -432,8 +433,8 @@ export default function ProfileEdit() {
             <div className="flex gap-3 overflow-x-auto pb-3 mb-4 -mx-6 px-6">
               {selectedBooks.map(book => (
                 <button
-                  key={book.open_library_id}
-                  onClick={() => setSelectedBooks(prev => prev.filter(b => b.open_library_id !== book.open_library_id))}
+                  key={book.external_id}
+                  onClick={() => setSelectedBooks(prev => prev.filter(b => b.external_id !== book.external_id))}
                   className="flex-shrink-0 relative w-16"
                 >
                   {book.cover_url ? (
@@ -464,10 +465,10 @@ export default function ProfileEdit() {
           {!bookSearching && bookResults.length > 0 && (
             <div className="space-y-2 mb-4">
               {bookResults.map(book => {
-                const isSelected = selectedBooks.some(b => b.open_library_id === book.key)
+                const isSelected = selectedBooks.some(b => b.external_id === book.external_id)
                 return (
                   <button
-                    key={book.key}
+                    key={book.external_id}
                     onClick={() => toggleBook(book)}
                     className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-colors text-left ${
                       isSelected
@@ -475,15 +476,15 @@ export default function ProfileEdit() {
                         : 'border-stone-200 bg-white hover:border-amber-300'
                     }`}
                   >
-                    {book.cover_i ? (
-                      <img src={coverUrl(book.cover_i, 'S')} alt="" className="w-10 h-14 object-cover rounded flex-shrink-0" />
+                    {book.cover_url ? (
+                      <img src={book.cover_url} alt="" className="w-10 h-14 object-cover rounded flex-shrink-0" />
                     ) : (
                       <div className="w-10 h-14 rounded bg-stone-100 flex-shrink-0" />
                     )}
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-stone-900 truncate">{book.title}</p>
-                      {book.author_name?.[0] && (
-                        <p className="text-xs text-stone-500 truncate">{book.author_name[0]}</p>
+                      {book.author && (
+                        <p className="text-xs text-stone-500 truncate">{book.author}</p>
                       )}
                     </div>
                     {isSelected && (

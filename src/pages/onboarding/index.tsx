@@ -11,7 +11,8 @@ import StepBooks from './StepBooks'
 const STEPS = ['Info', 'Photos', 'Genres', 'Books']
 
 export interface SelectedBook {
-  open_library_id: string
+  source: 'google_books' | 'open_library'
+  external_id: string
   title: string
   author: string
   cover_url: string | null
@@ -81,8 +82,8 @@ export default function Onboarding() {
       const { data: bookRow } = await supabase
         .from('books')
         .upsert(
-          { open_library_id: book.open_library_id, title: book.title, author: book.author, cover_url: book.cover_url },
-          { onConflict: 'open_library_id' }
+          { source: book.source, external_id: book.external_id, title: book.title, author: book.author, cover_url: book.cover_url },
+          { onConflict: 'source,external_id' }
         )
         .select('id')
         .single()
