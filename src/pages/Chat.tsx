@@ -92,29 +92,21 @@ export default function Chat() {
     setLoading(true)
     setLoadError(false)
 
-    const { data: match } = await supabase
-      .from('matches')
-      .select('user1_id, user2_id')
-      .eq('id', matchId!)
-      .single()
-
-    if (match) {
-      const otherId = match.user1_id === user!.id ? match.user2_id : match.user1_id
-      const { data: p } = await supabase
-        .from('profiles')
-        .select('name, photos')
-        .eq('id', otherId)
-        .single()
-      if (p) setPartner({ id: otherId, name: p.name, photo: p.photos?.[0] ?? null })
-    }
-
-    const { data: msgs, error: msgsError } = await supabase
-      .from('messages')
-      .select('id, sender_id, content, created_at')
-      .eq('match_id', matchId!)
-      .order('created_at', { ascending: true })
+    // Fetch match and messages in parallel — messages don't depend on the match
+    const [{ data: match }, { data: msgs, error: msgsError }] = await Promise.all([
+      supabase.from('matches').select('user1_id, user2_id').eq('id', matchId!).single(),
+      supabase.from('messages').select('id, sender_id, content, created_at').eq('match_id', matchId!).order('created_at', { ascending: true }),
+    ])
 
     if (msgsError) { setLoadError(true); setLoading(false); return }
+
+    // Profile fetch uses otherId from match — fire after parallel pair resolves
+    if (match) {
+      const otherId = match.user1_id === user!.id ? match.user2_id : match.user1_id
+      supabase.from('profiles').select('name, photos').eq('id', otherId).single().then(({ data: p }) => {
+        if (p) setPartner({ id: otherId, name: p.name, photo: p.photos?.[0] ?? null })
+      })
+    }
 
     setMessages(prev => {
       const byId = new Map<string, Message>()
@@ -171,8 +163,11 @@ export default function Chat() {
   const block = async () => {
     if (!partner.id || blocking) return
     setBlocking(true)
-    await supabase.from('blocks').insert({ blocker_id: user!.id, blocked_id: partner.id })
-    await supabase.from('matches').delete().eq('id', matchId)
+    const [{ error: blockError }, { error: matchError }] = await Promise.all([
+      supabase.from('blocks').insert({ blocker_id: user!.id, blocked_id: partner.id }),
+      supabase.from('matches').delete().eq('id', matchId),
+    ])
+    if (blockError || matchError) { setBlocking(false); return }
     navigate('/matches', { replace: true })
   }
 

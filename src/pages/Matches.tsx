@@ -67,10 +67,12 @@ export default function Matches() {
       m.user1_id === user!.id ? m.user2_id : m.user1_id
     )
 
-    const { data: profiles } = await supabase
+    const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
       .select('id, name, photos')
       .in('id', otherIds)
+
+    if (profilesError) { setFetchError(true); setLoading(false); return }
 
     const profileMap = Object.fromEntries((profiles ?? []).map(p => [p.id, p]))
 
