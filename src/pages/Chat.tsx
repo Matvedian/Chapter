@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuthStore } from '../store/auth'
 import { supabase } from '../lib/supabase'
+import type { RealtimeChannel } from '@supabase/supabase-js'
 
 interface Message {
   id: string
@@ -46,7 +47,10 @@ export default function Chat() {
   const [reportReason, setReportReason] = useState('')
   const [reporting, setReporting] = useState(false)
   const [reportDone, setReportDone] = useState(false)
+  const [partnerTyping, setPartnerTyping] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
+  const channelRef = useRef<RealtimeChannel | null>(null)
+  const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -54,7 +58,7 @@ export default function Chat() {
     loadInitial()
 
     const channel = supabase
-      .channel(`chat:${matchId}`)
+      .channel(`chat:${matchId}`, { config: { presence: { key: user.id } } })
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'messages', filter: `match_id=eq.${matchId}` },
@@ -63,14 +67,25 @@ export default function Chat() {
           setMessages(prev => prev.some(m => m.id === msg.id) ? prev : [...prev, msg])
         }
       )
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState<{ typing: boolean }>()
+        const isTyping = Object.entries(state).some(
+          ([key, presences]) => key !== user.id && presences.some(p => p.typing)
+        )
+        setPartnerTyping(isTyping)
+      })
       .subscribe()
 
-    return () => { supabase.removeChannel(channel) }
+    channelRef.current = channel
+    return () => {
+      supabase.removeChannel(channel)
+      channelRef.current = null
+    }
   }, [matchId, user?.id])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+  }, [messages, partnerTyping])
 
   const loadInitial = async () => {
     setLoading(true)
@@ -108,9 +123,20 @@ export default function Chat() {
     setLoading(false)
   }
 
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setText(e.target.value)
+    if (typingTimeout.current) clearTimeout(typingTimeout.current)
+    channelRef.current?.track({ typing: true })
+    typingTimeout.current = setTimeout(() => {
+      channelRef.current?.track({ typing: false })
+    }, 1500)
+  }
+
   const send = async () => {
     const content = text.trim()
     if (!content || sending || !user) return
+    if (typingTimeout.current) clearTimeout(typingTimeout.current)
+    channelRef.current?.track({ typing: false })
     setSending(true)
     setSendError(false)
     const { error } = await supabase.from('messages').insert({
@@ -245,6 +271,17 @@ export default function Chat() {
             )
           })
         )}
+        {partnerTyping && (
+          <div className="flex justify-start">
+            <div className="bg-white text-stone-900 shadow-sm rounded-2xl rounded-bl-sm px-4 py-3">
+              <div className="flex gap-1 items-center h-4">
+                <span className="w-1.5 h-1.5 bg-stone-400 rounded-full animate-bounce [animation-delay:0ms]" />
+                <span className="w-1.5 h-1.5 bg-stone-400 rounded-full animate-bounce [animation-delay:150ms]" />
+                <span className="w-1.5 h-1.5 bg-stone-400 rounded-full animate-bounce [animation-delay:300ms]" />
+              </div>
+            </div>
+          </div>
+        )}
         <div ref={bottomRef} />
       </div>
 
@@ -256,7 +293,7 @@ export default function Chat() {
       <div className="flex items-end gap-3">
         <textarea
           value={text}
-          onChange={e => setText(e.target.value)}
+          onChange={handleTextChange}
           onKeyDown={handleKey}
           placeholder="Type a message…"
           rows={1}
