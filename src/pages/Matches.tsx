@@ -46,18 +46,21 @@ export default function Matches() {
   const { user } = useAuthStore()
   const [items, setItems] = useState<MatchItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [fetchError, setFetchError] = useState(false)
   const navigate = useNavigate()
   const loadedRef = useRef(false)
 
   const load = useCallback(async () => {
     if (!user) return
     setLoading(true)
+    setFetchError(false)
 
-    const { data: matchRows } = await supabase
+    const { data: matchRows, error: matchError } = await supabase
       .from('matches')
       .select('id, user1_id, user2_id, created_at, messages(content, created_at, sender_id)')
       .or(`user1_id.eq.${user!.id},user2_id.eq.${user!.id}`)
 
+    if (matchError) { setFetchError(true); setLoading(false); return }
     if (!matchRows?.length) { setLoading(false); return }
 
     const otherIds = matchRows.map((m: MatchRow) =>
@@ -135,6 +138,17 @@ export default function Matches() {
         {loading ? (
           <div className="flex flex-col">
             {[...Array(5)].map((_, i) => <SkeletonRow key={i} />)}
+          </div>
+        ) : fetchError ? (
+          <div className="text-center px-8 pt-16">
+            <h2 className="text-lg font-bold text-stone-900">Couldn't load matches</h2>
+            <p className="text-stone-500 text-sm mt-1">Check your connection and try again.</p>
+            <button
+              onClick={load}
+              className="mt-5 px-5 py-2.5 rounded-xl bg-amber-400 text-stone-900 font-semibold text-sm"
+            >
+              Try again
+            </button>
           </div>
         ) : items.length === 0 ? (
           <div className="text-center px-8 pt-16">

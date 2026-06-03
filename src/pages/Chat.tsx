@@ -38,6 +38,7 @@ export default function Chat() {
   const [sending, setSending] = useState(false)
   const [sendError, setSendError] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [showMenu, setShowMenu] = useState(false)
   const [showUnmatchConfirm, setShowUnmatchConfirm] = useState(false)
   const [unmatching, setUnmatching] = useState(false)
@@ -89,6 +90,7 @@ export default function Chat() {
 
   const loadInitial = async () => {
     setLoading(true)
+    setLoadError(false)
 
     const { data: match } = await supabase
       .from('matches')
@@ -106,11 +108,13 @@ export default function Chat() {
       if (p) setPartner({ id: otherId, name: p.name, photo: p.photos?.[0] ?? null })
     }
 
-    const { data: msgs } = await supabase
+    const { data: msgs, error: msgsError } = await supabase
       .from('messages')
       .select('id, sender_id, content, created_at')
       .eq('match_id', matchId!)
       .order('created_at', { ascending: true })
+
+    if (msgsError) { setLoadError(true); setLoading(false); return }
 
     setMessages(prev => {
       const byId = new Map<string, Message>()
@@ -247,6 +251,17 @@ export default function Chat() {
         {loading ? (
           <div className="flex justify-center pt-8">
             <div className="w-6 h-6 border-4 border-amber-400 border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : loadError ? (
+          <div className="flex flex-col items-center pt-16 px-8 text-center">
+            <p className="font-semibold text-stone-900">Couldn't load messages</p>
+            <p className="text-stone-400 text-sm mt-1">Check your connection and try again.</p>
+            <button
+              onClick={loadInitial}
+              className="mt-5 px-5 py-2.5 rounded-xl bg-amber-400 text-stone-900 font-semibold text-sm"
+            >
+              Try again
+            </button>
           </div>
         ) : messages.length === 0 ? (
           <p className="text-center text-stone-400 text-sm pt-8">

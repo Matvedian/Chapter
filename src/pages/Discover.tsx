@@ -133,6 +133,7 @@ export default function Discover() {
   const [allCandidates, setAllCandidates] = useState<Candidate[]>([])
   const [candidates, setCandidates] = useState<Candidate[]>([])
   const [loading, setLoading] = useState(true)
+  const [fetchError, setFetchError] = useState(false)
   const [currentIndex, setCurrentIndex] = useState(-1)
   const [swipeDir, setSwipeDir] = useState<'left' | 'right' | null>(null)
   const [matchName, setMatchName] = useState<string | null>(null)
@@ -149,19 +150,22 @@ export default function Discover() {
   const loadCandidates = useCallback(async () => {
     if (!user) return
     setLoading(true)
+    setFetchError(false)
 
-    const { data: rpcData } = await supabase.rpc('get_candidates', { p_user_id: user.id })
+    const { data: rpcData, error: rpcError } = await supabase.rpc('get_candidates', { p_user_id: user.id })
+    if (rpcError) { setFetchError(true); setLoading(false); return }
     if (!rpcData?.length) { setLoading(false); return }
 
     const rows = rpcData as { profile_id: string; score: number }[]
     const ids = rows.map(r => r.profile_id)
     const scoreMap = Object.fromEntries(rows.map(r => [r.profile_id, r.score]))
 
-    const { data: profiles } = await supabase
+    const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
       .select('id, name, birth_date, photos, gender, bio')
       .in('id', ids)
 
+    if (profilesError) { setFetchError(true); setLoading(false); return }
     if (!profiles?.length) { setLoading(false); return }
 
     const enriched: Candidate[] = ids
@@ -319,25 +323,38 @@ export default function Discover() {
       {/* Card area */}
       <div className="flex-1 flex items-center justify-center overflow-hidden">
         {isEmpty ? (
-          <div className="text-center px-8">
-            <p className="text-5xl mb-4">📚</p>
-            <h2 className="text-xl font-bold text-stone-900">
-              {filtersActive(filters) ? 'No matches for these filters' : 'All caught up'}
-            </h2>
-            <p className="text-stone-500 text-sm mt-2">
-              {filtersActive(filters)
-                ? 'Try widening your filters to see more readers.'
-                : "You've seen everyone. Check back as more readers join."}
-            </p>
-            {filtersActive(filters) && (
+          fetchError ? (
+            <div className="text-center px-8">
+              <h2 className="text-xl font-bold text-stone-900">Something went wrong</h2>
+              <p className="text-stone-500 text-sm mt-2">Couldn't load profiles. Check your connection.</p>
               <button
-                onClick={resetFilters}
-                className="mt-4 px-4 py-2 rounded-xl bg-amber-400 text-stone-900 font-semibold text-sm"
+                onClick={loadCandidates}
+                className="mt-5 px-5 py-2.5 rounded-xl bg-amber-400 text-stone-900 font-semibold text-sm"
               >
-                Reset filters
+                Try again
               </button>
-            )}
-          </div>
+            </div>
+          ) : (
+            <div className="text-center px-8">
+              <p className="text-5xl mb-4">📚</p>
+              <h2 className="text-xl font-bold text-stone-900">
+                {filtersActive(filters) ? 'No matches for these filters' : 'All caught up'}
+              </h2>
+              <p className="text-stone-500 text-sm mt-2">
+                {filtersActive(filters)
+                  ? 'Try widening your filters to see more readers.'
+                  : "You've seen everyone. Check back as more readers join."}
+              </p>
+              {filtersActive(filters) && (
+                <button
+                  onClick={resetFilters}
+                  className="mt-4 px-4 py-2 rounded-xl bg-amber-400 text-stone-900 font-semibold text-sm"
+                >
+                  Reset filters
+                </button>
+              )}
+            </div>
+          )
         ) : (
           <div className="relative" style={{ width: 320, height: 480 }}>
             {candidates.map((candidate, index) => {
