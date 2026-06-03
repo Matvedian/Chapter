@@ -37,7 +37,7 @@ All tables have RLS enabled.
 
 | Table | Purpose |
 |---|---|
-| `profiles` | Extends `auth.users`. Columns: `name`, `birth_date`, `photos text[]`, `gender`, `looking_for text[]`, `onboarding_complete`, `bio text` |
+| `profiles` | Extends `auth.users`. Columns: `name`, `birth_date`, `photos text[]`, `gender`, `looking_for text[]`, `onboarding_complete`, `bio text`, `push_token text` |
 | `genres` | Lookup table, 20 genres, public read |
 | `user_genres` | User ↔ genre join table |
 | `books` | Cached from Open Library. `open_library_id` is unique. |
@@ -45,8 +45,10 @@ All tables have RLS enabled.
 | `swipes` | `swiper_id`, `swiped_id`, `direction` (`like`\|`pass`). Unique on `(swiper_id, swiped_id)`. |
 | `matches` | Auto-created by trigger `on_mutual_like` on mutual like. |
 | `messages` | `match_id`, `sender_id`, `content`. Used for Realtime chat. |
+| `blocks` | `blocker_id`, `blocked_id`. Unique on `(blocker_id, blocked_id)`. RLS: blocker can insert/delete/read own rows. |
+| `reports` | `reporter_id`, `reported_id`, `reason text`. RLS: reporter can insert only. |
 
-**Matching RPC:** `get_candidates(p_user_id uuid)` — returns `TABLE(profile_id uuid, score integer)`. Score = `(shared_books × 3) + (shared_genres × 1)`. Call via:
+**Matching RPC:** `get_candidates(p_user_id uuid)` — returns `TABLE(profile_id uuid, score integer)`. Score = `(shared_books × 3) + (shared_genres × 1)`. Excludes: users already swiped liked on, passes < 30 days old, and blocked users (both directions). Call via:
 ```ts
 supabase.rpc('get_candidates', { p_user_id: user.id })
 ```
@@ -63,6 +65,12 @@ supabase.rpc('get_candidates', { p_user_id: user.id })
 
 **Chat message dedup:** The Realtime subscription and the initial load can race. Messages are merged by ID using a `Map` in `setMessages` to avoid duplicates or lost messages.
 
+**Chat `loadInitial` parallelism:** Match and messages are fetched in parallel via `Promise.all`. The profile fetch fires after (needs `otherId` from match) but does not block the loading state — it resolves asynchronously and updates the header.
+
+**Typing indicator channel:** The chat Realtime channel is stored in `channelRef` so `track()` can be called from the textarea `onChange` handler outside the `useEffect`. The `typingTimeout` ref debounces the clear. Presence is keyed by `user.id` so self-presence is filtered out in the sync handler.
+
+**Block parallelism:** `blocks.insert` and `matches.delete` in `block()` run via `Promise.all` — they're independent. Both errors are checked before navigating.
+
 ## Implementation status
 
 - **Phase 1:** Complete — scaffold, deps, Capacitor, Supabase connected, DB migrated.
@@ -77,3 +85,8 @@ supabase.rpc('get_candidates', { p_user_id: user.id })
 - **Genres:** "Children's" replaced with "Erotica" directly in the `genres` table (id 15). 20 genres total.
 - **Phase 7:** Complete — multiple photos on swipe cards (dot indicators + tap left/right edge to navigate); full profile modal (tap ℹ button → photo carousel, bio, genres, favourite books fetched lazily); bio/about-me field in onboarding, profile edit, and own profile page; unmatch in Chat (three-dot menu → confirmation modal → DELETE match → back to /matches).
 - **Capacitor/iOS:** `base: './'` added to `vite.config.ts` for correct asset paths. `@react-spring/web` installed (peer dep of `react-tinder-card`).
+- **Re-surface passed candidates:** `get_candidates` excludes pass swipes older than 30 days so profiles re-enter the deck. Likes are always excluded.
+- **Report / block:** `blocks` and `reports` tables with RLS. Chat three-dot menu has Report (reason picker → insert into reports) and Block (parallel insert+delete → /matches). `get_candidates` excludes blocked users in both directions.
+- **Typing indicator:** Supabase Realtime presence on the chat channel (keyed by `user.id`). `channelRef` holds the channel for `track()` calls. Typing clears after 1.5s debounce or on send. Three-dot bounce bubble shown when partner is typing.
+- **Offline / error handling:** `useNetworkStatus` hook (`navigator.onLine` + window events). `OfflineBanner` component — 3-state (hidden/offline/reconnected), auto-hides 2s after reconnect, respects `safe-area-inset-top`. Discover and Matches show `fetchError` state with retry button on Supabase errors. Chat shows `loadError` state on messages fetch failure.
+- **Push notifications (partial):** `@capacitor/push-notifications` installed. `push_token text` column on `profiles`. Frontend token registration and Edge Function not yet implemented — pending APNs key.
