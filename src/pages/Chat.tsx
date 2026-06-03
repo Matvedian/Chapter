@@ -11,9 +11,18 @@ interface Message {
 }
 
 interface Partner {
+  id: string | null
   name: string | null
   photo: string | null
 }
+
+const REPORT_REASONS = [
+  'Inappropriate photos',
+  'Offensive or abusive messages',
+  'Spam or fake account',
+  'I think they\'re underage',
+  'Other',
+]
 
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -23,7 +32,7 @@ export default function Chat() {
   const { matchId } = useParams<{ matchId: string }>()
   const { user } = useAuthStore()
   const [messages, setMessages] = useState<Message[]>([])
-  const [partner, setPartner] = useState<Partner>({ name: null, photo: null })
+  const [partner, setPartner] = useState<Partner>({ id: null, name: null, photo: null })
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
   const [sendError, setSendError] = useState(false)
@@ -31,6 +40,12 @@ export default function Chat() {
   const [showMenu, setShowMenu] = useState(false)
   const [showUnmatchConfirm, setShowUnmatchConfirm] = useState(false)
   const [unmatching, setUnmatching] = useState(false)
+  const [showBlockConfirm, setShowBlockConfirm] = useState(false)
+  const [blocking, setBlocking] = useState(false)
+  const [showReport, setShowReport] = useState(false)
+  const [reportReason, setReportReason] = useState('')
+  const [reporting, setReporting] = useState(false)
+  const [reportDone, setReportDone] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
 
@@ -45,7 +60,6 @@ export default function Chat() {
         { event: 'INSERT', schema: 'public', table: 'messages', filter: `match_id=eq.${matchId}` },
         (payload) => {
           const msg = payload.new as Message
-          // Deduplicate: the message may already be present from the initial load
           setMessages(prev => prev.some(m => m.id === msg.id) ? prev : [...prev, msg])
         }
       )
@@ -74,7 +88,7 @@ export default function Chat() {
         .select('name, photos')
         .eq('id', otherId)
         .single()
-      if (p) setPartner({ name: p.name, photo: p.photos?.[0] ?? null })
+      if (p) setPartner({ id: otherId, name: p.name, photo: p.photos?.[0] ?? null })
     }
 
     const { data: msgs } = await supabase
@@ -124,6 +138,28 @@ export default function Chat() {
     navigate('/matches', { replace: true })
   }
 
+  const block = async () => {
+    if (!partner.id || blocking) return
+    setBlocking(true)
+    await supabase.from('blocks').insert({ blocker_id: user!.id, blocked_id: partner.id })
+    await supabase.from('matches').delete().eq('id', matchId)
+    navigate('/matches', { replace: true })
+  }
+
+  const report = async () => {
+    if (!partner.id || !reportReason || reporting) return
+    setReporting(true)
+    await supabase.from('reports').insert({ reporter_id: user!.id, reported_id: partner.id, reason: reportReason })
+    setReporting(false)
+    setReportDone(true)
+  }
+
+  const closeReport = () => {
+    setShowReport(false)
+    setReportReason('')
+    setReportDone(false)
+  }
+
   return (
     <div className="h-dvh bg-stone-50 flex flex-col overflow-hidden">
 
@@ -157,8 +193,20 @@ export default function Chat() {
               <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
               <div className="absolute right-0 top-10 bg-white rounded-xl shadow-xl border border-stone-100 z-50 min-w-40 overflow-hidden">
                 <button
-                  onClick={() => { setShowMenu(false); setShowUnmatchConfirm(true) }}
+                  onClick={() => { setShowMenu(false); setShowReport(true) }}
+                  className="w-full px-4 py-3 text-left text-sm text-stone-700 hover:bg-stone-50 transition-colors"
+                >
+                  Report
+                </button>
+                <button
+                  onClick={() => { setShowMenu(false); setShowBlockConfirm(true) }}
                   className="w-full px-4 py-3 text-left text-sm text-red-500 hover:bg-red-50 transition-colors"
+                >
+                  Block
+                </button>
+                <button
+                  onClick={() => { setShowMenu(false); setShowUnmatchConfirm(true) }}
+                  className="w-full px-4 py-3 text-left text-sm text-red-500 hover:bg-red-50 transition-colors border-t border-stone-100"
                 >
                   Unmatch
                 </button>
@@ -254,6 +302,102 @@ export default function Chat() {
                 {unmatching ? 'Removing…' : 'Unmatch'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Block confirmation */}
+      {showBlockConfirm && (
+        <div
+          className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-6"
+          onClick={() => setShowBlockConfirm(false)}
+        >
+          <div
+            className="bg-white rounded-3xl p-6 max-w-xs w-full shadow-2xl"
+            onClick={e => e.stopPropagation()}
+          >
+            <h2 className="text-lg font-bold text-stone-900 mb-2">Block {partner.name ?? 'this person'}?</h2>
+            <p className="text-stone-500 text-sm mb-6">
+              They won't appear in your matches or swipe deck. This will also remove your conversation.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowBlockConfirm(false)}
+                className="flex-1 py-2.5 rounded-xl border border-stone-200 text-stone-600 font-semibold text-sm hover:bg-stone-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={block}
+                disabled={blocking}
+                className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold text-sm transition-colors disabled:opacity-50"
+              >
+                {blocking ? 'Blocking…' : 'Block'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Report modal */}
+      {showReport && (
+        <div
+          className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-6"
+          onClick={reportDone ? closeReport : undefined}
+        >
+          <div
+            className="bg-white rounded-3xl p-6 max-w-xs w-full shadow-2xl"
+            onClick={e => e.stopPropagation()}
+          >
+            {reportDone ? (
+              <>
+                <h2 className="text-lg font-bold text-stone-900 mb-2">Report submitted</h2>
+                <p className="text-stone-500 text-sm mb-6">
+                  Thanks for letting us know. We'll review your report.
+                </p>
+                <button
+                  onClick={closeReport}
+                  className="w-full py-2.5 rounded-xl bg-stone-900 text-white font-semibold text-sm hover:bg-stone-700 transition-colors"
+                >
+                  Done
+                </button>
+              </>
+            ) : (
+              <>
+                <h2 className="text-lg font-bold text-stone-900 mb-1">Report {partner.name ?? 'this person'}</h2>
+                <p className="text-stone-500 text-sm mb-4">What's the issue?</p>
+                <div className="space-y-2 mb-6">
+                  {REPORT_REASONS.map(reason => (
+                    <button
+                      key={reason}
+                      onClick={() => setReportReason(reason)}
+                      className={`w-full px-4 py-2.5 rounded-xl border text-sm text-left transition-colors ${
+                        reportReason === reason
+                          ? 'border-amber-400 bg-amber-50 text-stone-900 font-medium'
+                          : 'border-stone-200 text-stone-700 hover:bg-stone-50'
+                      }`}
+                    >
+                      {reason}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={closeReport}
+                    className="flex-1 py-2.5 rounded-xl border border-stone-200 text-stone-600 font-semibold text-sm hover:bg-stone-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={report}
+                    disabled={!reportReason || reporting}
+                    className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold text-sm transition-colors disabled:opacity-50"
+                  >
+                    {reporting ? 'Sending…' : 'Report'}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
