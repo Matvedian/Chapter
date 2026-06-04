@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Browser } from '@capacitor/browser'
 import { useAuthStore } from '../store/auth'
 import { useProfileStore } from '../store/profile'
@@ -9,6 +10,7 @@ type Status = 'idle' | 'creating' | 'open' | 'checking' | 'processing' | 'failed
 export default function Verify() {
   const { user } = useAuthStore()
   const { fetch: fetchProfile } = useProfileStore()
+  const navigate = useNavigate()
   const [status, setStatus] = useState<Status>('idle')
   const [errorDetail, setErrorDetail] = useState<string>('')
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -34,6 +36,7 @@ export default function Verify() {
         await Browser.close()
       }
       await fetchProfile(user.id)
+      navigate('/', { replace: true })
       return true
     }
     return false
