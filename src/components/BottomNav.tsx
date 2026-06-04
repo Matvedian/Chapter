@@ -4,6 +4,7 @@ import { useNotificationStore } from '../store/notifications'
 const TABS = [
   { path: '/',        label: 'Discover', icon: '🔍' },
   { path: '/matches', label: 'Matches',  icon: '💬' },
+  { path: '/library', label: 'Books',    icon: '📚' },
   { path: '/profile', label: 'Profile',  icon: '👤' },
 ]
 
