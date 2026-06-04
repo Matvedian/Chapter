@@ -10,31 +10,42 @@ export default function Verify() {
   const { user } = useAuthStore()
   const { fetch: fetchProfile } = useProfileStore()
   const [status, setStatus] = useState<Status>('idle')
+  const [errorDetail, setErrorDetail] = useState<string>('')
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const pollCount = useRef(0)
+  const browserOpenRef = useRef(false)
 
   const stopPolling = () => {
     if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
   }
 
-  const startPolling = () => {
+  const checkVerified = async (): Promise<boolean> => {
+    if (!user) return false
+    const { data } = await supabase
+      .from('profiles')
+      .select('identity_verified')
+      .eq('id', user.id)
+      .single()
+    if (data?.identity_verified) {
+      stopPolling()
+      // Close browser if still open, then refresh profile
+      if (browserOpenRef.current) {
+        browserOpenRef.current = false
+        await Browser.close()
+      }
+      await fetchProfile(user.id)
+      return true
+    }
+    return false
+  }
+
+  const startPolling = (limit = 20) => {
     pollCount.current = 0
     pollRef.current = setInterval(async () => {
       pollCount.current++
-      if (!user) return
-      const { data } = await supabase
-        .from('profiles')
-        .select('identity_verified')
-        .eq('id', user.id)
-        .single()
-      if (data?.identity_verified) {
-        stopPolling()
-        await fetchProfile(user.id)
-        // AuthGuard will redirect automatically once identity_verified is true
-        return
-      }
-      // Give up after ~30s and show "processing" message
-      if (pollCount.current >= 10) {
+      const verified = await checkVerified()
+      if (verified) return
+      if (pollCount.current >= limit) {
         stopPolling()
         setStatus('processing')
       }
@@ -42,13 +53,25 @@ export default function Verify() {
   }
 
   useEffect(() => {
-    const listener = Browser.addListener('browserFinished', () => {
-      setStatus('checking')
-      startPolling()
+    // Poll in background while browser is open
+    const pageLoaded = Browser.addListener('browserPageLoaded', () => {
+      if (browserOpenRef.current && !pollRef.current) {
+        startPolling(20)
+      }
     })
+
+    // Also poll when browser closes
+    const finished = Browser.addListener('browserFinished', () => {
+      browserOpenRef.current = false
+      stopPolling()
+      setStatus('checking')
+      startPolling(10)
+    })
+
     return () => {
       stopPolling()
-      listener.then(h => h.remove())
+      pageLoaded.then(h => h.remove())
+      finished.then(h => h.remove())
     }
   }, [user?.id])
 
@@ -56,14 +79,19 @@ export default function Verify() {
     if (!user) return
     setStatus('creating')
     try {
-      const { data: { session } } = await supabase.auth.getSession()
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+      if (sessionError || !session) throw new Error(`No session: ${sessionError?.message}`)
       const res = await supabase.functions.invoke('create-verification-session', {
-        headers: { Authorization: `Bearer ${session?.access_token}` },
+        headers: { Authorization: `Bearer ${session.access_token}` },
       })
-      if (res.error || !res.data?.url) throw new Error()
+      if (res.error) throw new Error(`Function error: ${res.error.message}`)
+      if (res.data?.error) throw new Error(`Stripe error: ${res.data.error}`)
+      if (!res.data?.url) throw new Error(`No URL in response: ${JSON.stringify(res.data)}`)
+      browserOpenRef.current = true
       setStatus('open')
       await Browser.open({ url: res.data.url, presentationStyle: 'fullscreen' })
-    } catch {
+    } catch (e: unknown) {
+      setErrorDetail(e instanceof Error ? e.message : String(e))
       setStatus('failed')
     }
   }
@@ -94,7 +122,10 @@ export default function Verify() {
       )}
 
       {status === 'open' && (
-        <p className="text-sm text-stone-400">Complete the steps in the browser, then come back here.</p>
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-4 border-amber-400 border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-stone-400">Complete the steps in the browser…</p>
+        </div>
       )}
 
       {status === 'checking' && (
@@ -111,7 +142,7 @@ export default function Verify() {
             Please come back shortly.
           </p>
           <button
-            onClick={() => { setStatus('checking'); startPolling() }}
+            onClick={() => { setStatus('checking'); startPolling(10) }}
             className="px-6 py-2.5 rounded-xl bg-amber-400 text-stone-900 font-semibold text-sm"
           >
             Check again
@@ -122,6 +153,7 @@ export default function Verify() {
       {status === 'failed' && (
         <div className="flex flex-col items-center gap-4">
           <p className="text-red-500 text-sm">Something went wrong. Please try again.</p>
+          {errorDetail ? <p className="text-xs text-red-400 mt-1 break-all">{errorDetail}</p> : null}
           <button
             onClick={() => setStatus('idle')}
             className="px-6 py-2.5 rounded-xl bg-amber-400 text-stone-900 font-semibold text-sm"
