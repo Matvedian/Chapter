@@ -1,5 +1,5 @@
 export interface BookResult {
-  source: 'google_books' | 'open_library'
+  source: 'google_books' | 'open_library' | 'spotify'
   external_id: string
   title: string
   author: string

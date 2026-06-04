@@ -3,6 +3,7 @@ import AuthGuard from './components/AuthGuard'
 import NotificationListener from './components/NotificationListener'
 import OfflineBanner from './components/OfflineBanner'
 import ToastBanner from './components/ToastBanner'
+import { useSpotifyCallback } from './hooks/useSpotifyCallback'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Onboarding from './pages/onboarding'
@@ -13,9 +14,15 @@ import Profile from './pages/Profile'
 import ProfileEdit from './pages/ProfileEdit'
 import Library from './pages/Library'
 
+function AppInner() {
+  useSpotifyCallback()
+  return null
+}
+
 export default function App() {
   return (
     <BrowserRouter>
+      <AppInner />
       <NotificationListener />
       <OfflineBanner />
       <ToastBanner />

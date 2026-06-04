@@ -11,7 +11,7 @@ import StepBooks from './StepBooks'
 const STEPS = ['Info', 'Photos', 'Genres', 'Books']
 
 export interface SelectedBook {
-  source: 'google_books' | 'open_library'
+  source: 'google_books' | 'open_library' | 'spotify'
   external_id: string
   title: string
   author: string
