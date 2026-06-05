@@ -37,7 +37,7 @@ All tables have RLS enabled.
 
 | Table | Purpose |
 |---|---|
-| `profiles` | Extends `auth.users`. Columns: `name`, `birth_date`, `photos text[]`, `gender`, `looking_for text[]`, `onboarding_complete`, `bio text`, `push_token text`, `identity_verified boolean` (default false), `stripe_verification_session_id text` |
+| `profiles` | Extends `auth.users`. Columns: `name`, `birth_date`, `photos text[]`, `gender`, `looking_for text[]`, `onboarding_complete`, `bio text`, `push_token text`, `identity_verified boolean` (default false), `stripe_verification_session_id text`, `paused boolean` (default false) |
 | `genres` | Lookup table, 20 genres, public read |
 | `user_genres` | User ↔ genre join table |
 | `books` | Cached from Google Books / Open Library. `(source, external_id)` is unique. `source` defaults to `'open_library'`. |
@@ -49,7 +49,7 @@ All tables have RLS enabled.
 | `reports` | `reporter_id`, `reported_id`, `reason text`. RLS: reporter can insert only. |
 | `platform_connections` | `user_id`, `platform text`, `access_token text`, `refresh_token text`, `expires_at timestamptz`, `connected_at timestamptz`. Unique on `(user_id, platform)`. RLS: users manage own rows only. |
 
-**Matching RPC:** `get_candidates(p_user_id uuid)` — returns `TABLE(profile_id uuid, score integer)`. Score = `(shared_books × 3) + (shared_genres × 1)`. Excludes: users already swiped liked on, passes < 30 days old, and blocked users (both directions). Call via:
+**Matching RPC:** `get_candidates(p_user_id uuid)` — returns `TABLE(profile_id uuid, score integer)`. Score = `(shared_books × 3) + (shared_genres × 1)`. Excludes: users already swiped liked on, passes < 30 days old, blocked users (both directions), and paused profiles. Call via:
 ```ts
 supabase.rpc('get_candidates', { p_user_id: user.id })
 ```
@@ -72,7 +72,11 @@ supabase.rpc('get_candidates', { p_user_id: user.id })
 
 **Block parallelism:** `blocks.insert` and `matches.delete` in `block()` run via `Promise.all` — they're independent. Both errors are checked before navigating.
 
-**Identity verification gate:** `AuthGuard` redirects to `/verify` when `onboarding_complete && !identity_verified`. `Verify.tsx` calls the `create-verification-session` Edge Function (JWT-authenticated) to get a Stripe hosted URL, opens it via `@capacitor/browser`, then polls `profiles.identity_verified` every 3s. Polling starts on `browserPageLoaded` (background) and restarts on `browserFinished`. After 20 poll attempts it shows a "processing" state with a manual retry. The `stripe-webhook` Edge Function (no JWT, verifies Stripe signature) sets `identity_verified = true` via service role after confirming DOB ≥ 18.
+**Identity verification gate:** `AuthGuard` redirects to `/verify` when `onboarding_complete && !identity_verified`. `Verify.tsx` calls the `create-verification-session` Edge Function (JWT-authenticated) to get a Stripe hosted URL, opens it via `@capacitor/browser`, then polls `profiles.identity_verified` every 3s. Polling starts on `browserPageLoaded` (background) and restarts on `browserFinished`. After 20 poll attempts it shows a "processing" state with a manual retry. The `stripe-webhook` Edge Function (no JWT, verifies Stripe signature) sets `identity_verified = true` via service role after confirming DOB ≥ 18. The `return_url` for the Stripe session is `chapter://verify-complete` — `Verify.tsx` listens for this via `App.addListener('appUrlOpen')` and calls `Browser.close()`, which fires `browserFinished` and triggers the completion poll.
+
+**ProfileEdit books save — diff-based to preserve ratings:** `saveBooks` does NOT delete all favorites. It computes a diff: deletes only the removed books (by `user_book.id`, stored in `originalBooks` state as `{ userBookId, external_id }[]`), and upserts only newly added books. Existing favorites (and their star ratings) are untouched. After save, re-fetches `user_books` to refresh `originalBooks` with the new row IDs.
+
+**Matches Realtime subscription stability:** The subscription is gated on a `loaded` boolean state (flips once on first successful fetch) rather than `loading`. This prevents the channel from being torn down and recreated on every retry, which would leave a brief gap with no subscription.
 
 **Spotify PKCE flow:** Code verifier is generated in `spotify.ts` and stored in `sessionStorage` before opening the browser. `useSpotifyCallback.ts` listens to `App.addListener('appUrlOpen')` for the `chapter://oauth/callback` deep link, exchanges the code, upserts tokens into `platform_connections`, then imports all saved audiobooks into `user_books`. Token refresh happens on re-import if `expires_at` is past.
 
@@ -98,4 +102,9 @@ supabase.rpc('get_candidates', { p_user_id: user.id })
 - **Book search migration:** Google Books is now the primary search (requires `VITE_GOOGLE_BOOKS_API_KEY`), Open Library is the fallback. `books` table uses `(source, external_id)` unique constraint instead of `open_library_id`. `src/lib/bookSearch.ts` is the unified entry point — all callers import from there.
 - **Library tab:** `src/pages/Library.tsx` — personal reading library with four shelf tabs (Favourites / Reading / Read / Want to Read), 3-column book grid, add-book search panel, and a bottom-sheet move/remove action modal. `/library` route added; BottomNav now has four tabs: Discover, Matches, Library, Profile.
 - **Spotify OAuth:** `platform_connections` table stores OAuth tokens. `src/lib/spotify.ts` implements PKCE helpers + `getSavedAudiobooks()`. `useSpotifyCallback.ts` handles the deep-link callback. Profile page has connect / re-import / disconnect UI. Requires `VITE_SPOTIFY_CLIENT_ID` + `VITE_SPOTIFY_REDIRECT_URI` in `.env`. `chapter://` custom URL scheme registered in `ios/App/App/Info.plist`.
-- **Identity verification:** Stripe Identity gate between onboarding and the main app. `src/pages/Verify.tsx` manages idle → creating → open → checking → processing → failed states. Two Edge Functions deployed: `create-verification-session` (JWT-authenticated, creates VerificationSession + stores ID on profile) and `stripe-webhook` (verifies Stripe signature, sets `identity_verified = true` if DOB ≥ 18). AuthGuard redirects to `/verify` when `onboarding_complete && !identity_verified`.
+- **Identity verification:** Stripe Identity gate between onboarding and the main app. `src/pages/Verify.tsx` manages idle → creating → open → checking → processing → failed states. Two Edge Functions deployed: `create-verification-session` (JWT-authenticated, creates VerificationSession + stores ID on profile) and `stripe-webhook` (verifies Stripe signature, sets `identity_verified = true` if DOB ≥ 18). AuthGuard redirects to `/verify` when `onboarding_complete && !identity_verified`. `return_url` is `chapter://verify-complete`; app catches it via `appUrlOpen` to close the browser cleanly.
+- **Book ratings:** `user_books.rating` (1–5, already in schema) now surfaced in UI. Library.tsx: star row in action sheet (tap same star to clear), filled/dim stars on grid cards. Discover.tsx profile modal: shows star ratings next to favourite books.
+- **Match search:** Search bar in Matches header. Filters `items` array client-side by name or last message; "no results" empty state. Realtime updates land on `items`; filter applied at render time.
+- **Pause profile:** `profiles.paused boolean` (migration `add_paused_to_profiles`). `get_candidates` excludes paused profiles. Profile.tsx: toggle with confirmation modal; amber banner while paused.
+- **Account deletion:** `supabase/functions/delete-account/` Edge Function — verifies JWT, calls `admin.deleteUser()` via service role (cascades all data). Profile.tsx: "Delete account" button → confirmation modal → invoke → `signOut`.
+- **Bug fixes (2026-06-05):** ProfileEdit `saveBooks` now diff-based (preserves ratings); StepInfo bio field moved inside `space-y-6`; Chat typing timeout cleared on unmount; Discover candidate build uses profileMap (O(1) vs O(n²)); Matches Realtime subscription no longer re-created on retry.
