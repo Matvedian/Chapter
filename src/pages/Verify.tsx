@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { App } from '@capacitor/app'
 import { Browser } from '@capacitor/browser'
 import { useAuthStore } from '../store/auth'
 import { useProfileStore } from '../store/profile'
@@ -56,6 +57,14 @@ export default function Verify() {
   }
 
   useEffect(() => {
+    // Stripe redirects to chapter://verify-complete when done — close the browser so browserFinished fires
+    const appUrl = App.addListener('appUrlOpen', ({ url }: { url: string }) => {
+      if (url.startsWith('chapter://verify-complete') && browserOpenRef.current) {
+        browserOpenRef.current = false
+        Browser.close()
+      }
+    })
+
     // Poll in background while browser is open
     const pageLoaded = Browser.addListener('browserPageLoaded', () => {
       if (browserOpenRef.current && !pollRef.current) {
@@ -63,7 +72,7 @@ export default function Verify() {
       }
     })
 
-    // Also poll when browser closes
+    // Poll when browser closes (covers both manual close and return_url redirect)
     const finished = Browser.addListener('browserFinished', () => {
       browserOpenRef.current = false
       stopPolling()
@@ -73,6 +82,7 @@ export default function Verify() {
 
     return () => {
       stopPolling()
+      appUrl.then(h => h.remove())
       pageLoaded.then(h => h.remove())
       finished.then(h => h.remove())
     }
