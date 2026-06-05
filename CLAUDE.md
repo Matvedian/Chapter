@@ -29,7 +29,7 @@ npx cap run android  # Build and run on Android
 
 **State:** Zustand stores in `src/store/` — `auth.ts` (session/user), `profile.ts` (own profile), `notifications.ts` (toast queue + unread badge count).
 
-**Book search:** Open Library API — free, no key. Wrapper in `src/lib/openLibrary.ts` exports `searchBooks(query)` and `coverUrl(coverId, size)`.
+**Book search:** Google Books API (primary) with Open Library as fallback. Unified wrapper in `src/lib/bookSearch.ts` exports `searchBooks(query)` → `BookResult[]`. `src/lib/googleBooks.ts` hits the Google Books API (requires `VITE_GOOGLE_BOOKS_API_KEY`). `src/lib/openLibrary.ts` is the fallback. `BookResult` shape: `{ source, external_id, title, author, cover_url }`.
 
 ## Database schema (live on Supabase)
 
@@ -37,16 +37,17 @@ All tables have RLS enabled.
 
 | Table | Purpose |
 |---|---|
-| `profiles` | Extends `auth.users`. Columns: `name`, `birth_date`, `photos text[]`, `gender`, `looking_for text[]`, `onboarding_complete`, `bio text`, `push_token text` |
+| `profiles` | Extends `auth.users`. Columns: `name`, `birth_date`, `photos text[]`, `gender`, `looking_for text[]`, `onboarding_complete`, `bio text`, `push_token text`, `identity_verified boolean` (default false), `stripe_verification_session_id text` |
 | `genres` | Lookup table, 20 genres, public read |
 | `user_genres` | User ↔ genre join table |
-| `books` | Cached from Open Library. `open_library_id` is unique. |
-| `user_books` | User ↔ book with `shelf` enum (`reading`, `read`, `want_to_read`, `favorite`) and optional `rating` |
+| `books` | Cached from Google Books / Open Library. `(source, external_id)` is unique. `source` defaults to `'open_library'`. |
+| `user_books` | User ↔ book with `shelf` enum (`reading`, `read`, `want_to_read`, `favorite`) and optional `rating`. Unique on `(user_id, book_id)`. |
 | `swipes` | `swiper_id`, `swiped_id`, `direction` (`like`\|`pass`). Unique on `(swiper_id, swiped_id)`. |
 | `matches` | Auto-created by trigger `on_mutual_like` on mutual like. |
 | `messages` | `match_id`, `sender_id`, `content`. Used for Realtime chat. |
 | `blocks` | `blocker_id`, `blocked_id`. Unique on `(blocker_id, blocked_id)`. RLS: blocker can insert/delete/read own rows. |
 | `reports` | `reporter_id`, `reported_id`, `reason text`. RLS: reporter can insert only. |
+| `platform_connections` | `user_id`, `platform text`, `access_token text`, `refresh_token text`, `expires_at timestamptz`, `connected_at timestamptz`. Unique on `(user_id, platform)`. RLS: users manage own rows only. |
 
 **Matching RPC:** `get_candidates(p_user_id uuid)` — returns `TABLE(profile_id uuid, score integer)`. Score = `(shared_books × 3) + (shared_genres × 1)`. Excludes: users already swiped liked on, passes < 30 days old, and blocked users (both directions). Call via:
 ```ts
@@ -59,7 +60,7 @@ supabase.rpc('get_candidates', { p_user_id: user.id })
 
 **`profileStore.clear()` sets `loading: true`** (not false). This prevents a flash where session=true but profile=null and loading=false causes AuthGuard to skip the spinner on logout/re-login.
 
-**Onboarding books upsert:** The `books` table needs an UPDATE RLS policy to allow upsert on conflict (`open_library_id`). This migration was applied as `books_rls_update_policy`.
+**Onboarding books upsert:** The `books` table needs an UPDATE RLS policy to allow upsert on conflict. Conflict key is now `(source, external_id)`. The original migration was `books_rls_update_policy`; the schema rename migration is `google_books_source_schema`.
 
 **Swipe double-fire guard:** `Discover.tsx` uses a `swiping` ref (set true in `triggerSwipe`, reset in `handleCardLeft`) to prevent double swipes from button presses during animation. `onCardLeftScreen` is guarded to only fire for the top card.
 
@@ -70,6 +71,10 @@ supabase.rpc('get_candidates', { p_user_id: user.id })
 **Typing indicator channel:** The chat Realtime channel is stored in `channelRef` so `track()` can be called from the textarea `onChange` handler outside the `useEffect`. The `typingTimeout` ref debounces the clear. Presence is keyed by `user.id` so self-presence is filtered out in the sync handler.
 
 **Block parallelism:** `blocks.insert` and `matches.delete` in `block()` run via `Promise.all` — they're independent. Both errors are checked before navigating.
+
+**Identity verification gate:** `AuthGuard` redirects to `/verify` when `onboarding_complete && !identity_verified`. `Verify.tsx` calls the `create-verification-session` Edge Function (JWT-authenticated) to get a Stripe hosted URL, opens it via `@capacitor/browser`, then polls `profiles.identity_verified` every 3s. Polling starts on `browserPageLoaded` (background) and restarts on `browserFinished`. After 20 poll attempts it shows a "processing" state with a manual retry. The `stripe-webhook` Edge Function (no JWT, verifies Stripe signature) sets `identity_verified = true` via service role after confirming DOB ≥ 18.
+
+**Spotify PKCE flow:** Code verifier is generated in `spotify.ts` and stored in `sessionStorage` before opening the browser. `useSpotifyCallback.ts` listens to `App.addListener('appUrlOpen')` for the `chapter://oauth/callback` deep link, exchanges the code, upserts tokens into `platform_connections`, then imports all saved audiobooks into `user_books`. Token refresh happens on re-import if `expires_at` is past.
 
 ## Implementation status
 
@@ -90,3 +95,7 @@ supabase.rpc('get_candidates', { p_user_id: user.id })
 - **Typing indicator:** Supabase Realtime presence on the chat channel (keyed by `user.id`). `channelRef` holds the channel for `track()` calls. Typing clears after 1.5s debounce or on send. Three-dot bounce bubble shown when partner is typing.
 - **Offline / error handling:** `useNetworkStatus` hook (`navigator.onLine` + window events). `OfflineBanner` component — 3-state (hidden/offline/reconnected), auto-hides 2s after reconnect, respects `safe-area-inset-top`. Discover and Matches show `fetchError` state with retry button on Supabase errors. Chat shows `loadError` state on messages fetch failure.
 - **Push notifications (partial):** `@capacitor/push-notifications` installed. `push_token text` column on `profiles`. Frontend token registration and Edge Function not yet implemented — pending APNs key.
+- **Book search migration:** Google Books is now the primary search (requires `VITE_GOOGLE_BOOKS_API_KEY`), Open Library is the fallback. `books` table uses `(source, external_id)` unique constraint instead of `open_library_id`. `src/lib/bookSearch.ts` is the unified entry point — all callers import from there.
+- **Library tab:** `src/pages/Library.tsx` — personal reading library with four shelf tabs (Favourites / Reading / Read / Want to Read), 3-column book grid, add-book search panel, and a bottom-sheet move/remove action modal. `/library` route added; BottomNav now has four tabs: Discover, Matches, Library, Profile.
+- **Spotify OAuth:** `platform_connections` table stores OAuth tokens. `src/lib/spotify.ts` implements PKCE helpers + `getSavedAudiobooks()`. `useSpotifyCallback.ts` handles the deep-link callback. Profile page has connect / re-import / disconnect UI. Requires `VITE_SPOTIFY_CLIENT_ID` + `VITE_SPOTIFY_REDIRECT_URI` in `.env`. `chapter://` custom URL scheme registered in `ios/App/App/Info.plist`.
+- **Identity verification:** Stripe Identity gate between onboarding and the main app. `src/pages/Verify.tsx` manages idle → creating → open → checking → processing → failed states. Two Edge Functions deployed: `create-verification-session` (JWT-authenticated, creates VerificationSession + stores ID on profile) and `stripe-webhook` (verifies Stripe signature, sets `identity_verified = true` if DOB ≥ 18). AuthGuard redirects to `/verify` when `onboarding_complete && !identity_verified`.
