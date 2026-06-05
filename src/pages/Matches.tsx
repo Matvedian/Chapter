@@ -47,6 +47,7 @@ export default function Matches() {
   const [items, setItems] = useState<MatchItem[]>([])
   const [loading, setLoading] = useState(true)
   const [fetchError, setFetchError] = useState(false)
+  const [query, setQuery] = useState('')
   const navigate = useNavigate()
   const loadedRef = useRef(false)
 
@@ -130,10 +131,30 @@ export default function Matches() {
     return () => { supabase.removeChannel(channel) }
   }, [user?.id, loading])
 
+  const q = query.toLowerCase()
+  const filteredItems = q
+    ? items.filter(i =>
+        i.name?.toLowerCase().includes(q) ||
+        i.lastMessage?.toLowerCase().includes(q)
+      )
+    : items
+
   return (
     <div className="h-screen bg-stone-50 flex flex-col overflow-hidden">
-      <div className="px-6 safe-top pb-4 flex-shrink-0">
-        <h1 className="text-2xl font-bold text-stone-900">Matches</h1>
+      <div className="px-6 safe-top pb-3 flex-shrink-0">
+        <h1 className="text-2xl font-bold text-stone-900 mb-3">Matches</h1>
+        <div className="relative">
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <circle cx={11} cy={11} r={8} /><path d="m21 21-4.35-4.35" />
+          </svg>
+          <input
+            type="search"
+            placeholder="Search matches…"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            className="w-full pl-9 pr-4 py-2 rounded-xl bg-white border border-stone-200 text-stone-800 placeholder-stone-400 text-sm outline-none focus:border-amber-400"
+          />
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto">
@@ -158,9 +179,15 @@ export default function Matches() {
             <h2 className="text-lg font-bold text-stone-900">No matches yet</h2>
             <p className="text-stone-500 text-sm mt-1">Keep swiping to find your next great read — and reader.</p>
           </div>
+        ) : filteredItems.length === 0 ? (
+          <div className="text-center px-8 pt-16">
+            <p className="text-4xl mb-3">🔍</p>
+            <h2 className="text-lg font-bold text-stone-900">No results</h2>
+            <p className="text-stone-500 text-sm mt-1">No matches found for "{query}".</p>
+          </div>
         ) : (
           <ul>
-            {items.map(item => (
+            {filteredItems.map(item => (
               <li key={item.matchId}>
                 <button
                   onClick={() => navigate(`/chat/${item.matchId}`)}

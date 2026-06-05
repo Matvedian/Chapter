@@ -11,6 +11,7 @@ interface LibraryBook {
   userBookId: string
   bookId: string
   shelf: Shelf
+  rating: number | null
   title: string
   author: string
   cover_url: string | null
@@ -65,7 +66,7 @@ export default function Library() {
     setLoading(true)
     const { data } = await supabase
       .from('user_books')
-      .select('id, shelf, books(id, title, author, cover_url, source, external_id)')
+      .select('id, shelf, rating, books(id, title, author, cover_url, source, external_id)')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
 
@@ -74,6 +75,7 @@ export default function Library() {
       userBookId: r.id,
       bookId: r.books.id,
       shelf: r.shelf as Shelf,
+      rating: r.rating ?? null,
       title: r.books.title,
       author: r.books.author,
       cover_url: r.books.cover_url,
@@ -122,6 +124,13 @@ export default function Library() {
     setMoving(false)
     setSelected(null)
     setBooks(prev => prev.map(b => b.userBookId === book.userBookId ? { ...b, shelf } : b))
+  }
+
+  const rateBook = async (book: LibraryBook, rating: number) => {
+    const newRating = book.rating === rating ? null : rating
+    await supabase.from('user_books').update({ rating: newRating }).eq('id', book.userBookId)
+    setBooks(prev => prev.map(b => b.userBookId === book.userBookId ? { ...b, rating: newRating } : b))
+    setSelected(prev => prev?.userBookId === book.userBookId ? { ...prev, rating: newRating } : prev)
   }
 
   const removeBook = async (book: LibraryBook) => {
@@ -206,6 +215,9 @@ export default function Library() {
                 )}
                 <p className="text-xs font-medium text-stone-900 leading-tight line-clamp-2">{book.title}</p>
                 <p className="text-xs text-stone-400 truncate">{book.author}</p>
+                {book.rating && (
+                  <p className="text-xs text-amber-400 leading-none">{'★'.repeat(book.rating)}{'☆'.repeat(5 - book.rating)}</p>
+                )}
               </button>
             ))}
           </div>
@@ -286,6 +298,20 @@ export default function Library() {
                 <p className="font-semibold text-stone-900 leading-tight">{selected.title}</p>
                 <p className="text-sm text-stone-500">{selected.author}</p>
                 <p className="text-xs text-amber-600 mt-0.5">{SHELF_LABELS[selected.shelf]}</p>
+              </div>
+            </div>
+            <div className="mb-5">
+              <p className="text-xs font-semibold text-stone-400 uppercase tracking-wide mb-2">Your rating</p>
+              <div className="flex gap-2">
+                {[1, 2, 3, 4, 5].map(star => (
+                  <button
+                    key={star}
+                    onClick={() => rateBook(selected, star)}
+                    className={`text-2xl transition-opacity ${star <= (selected.rating ?? 0) ? 'opacity-100' : 'opacity-25'}`}
+                  >
+                    ★
+                  </button>
+                ))}
               </div>
             </div>
             <p className="text-xs font-semibold text-stone-400 uppercase tracking-wide mb-3">Move to</p>

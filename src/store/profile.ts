@@ -11,6 +11,7 @@ export interface Profile {
   onboarding_complete: boolean
   bio: string | null
   identity_verified: boolean
+  paused: boolean
 }
 
 interface ProfileState {
@@ -28,7 +29,7 @@ export const useProfileStore = create<ProfileState>((set) => ({
     set({ loading: true })
     const { data } = await supabase
       .from('profiles')
-      .select('id, name, birth_date, photos, gender, looking_for, onboarding_complete, bio, identity_verified')
+      .select('id, name, birth_date, photos, gender, looking_for, onboarding_complete, bio, identity_verified, paused')
       .eq('id', userId)
       .single()
     set({ profile: data ?? null, loading: false })

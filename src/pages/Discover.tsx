@@ -18,7 +18,7 @@ interface Candidate {
 interface ProfileModal {
   candidate: Candidate
   genres: string[]
-  books: { title: string; author: string; cover_url: string | null }[]
+  books: { title: string; author: string; cover_url: string | null; rating: number | null }[]
   loadingExtra: boolean
   photoIndex: number
 }
@@ -264,13 +264,13 @@ export default function Discover() {
     setProfileModal({ candidate, genres: [], books: [], loadingExtra: true, photoIndex: 0 })
     const [{ data: ugData }, { data: ubData }] = await Promise.all([
       supabase.from('user_genres').select('genres(name)').eq('user_id', candidate.id),
-      supabase.from('user_books').select('books(title, author, cover_url)').eq('user_id', candidate.id).eq('shelf', 'favorite'),
+      supabase.from('user_books').select('rating, books(title, author, cover_url)').eq('user_id', candidate.id).eq('shelf', 'favorite'),
     ])
     if (profileLoadRef.current !== candidate.id) return
     setProfileModal(prev => prev ? {
       ...prev,
       genres: ((ugData ?? []) as any[]).map(r => r.genres?.name).filter(Boolean),
-      books: ((ubData ?? []) as any[]).map(r => r.books).filter(Boolean),
+      books: ((ubData ?? []) as any[]).map(r => r.books ? { ...r.books, rating: r.rating ?? null } : null).filter(Boolean),
       loadingExtra: false,
     } : null)
   }
@@ -622,6 +622,7 @@ export default function Discover() {
                             <div>
                               <p className="text-sm font-medium text-stone-900">{b.title}</p>
                               <p className="text-xs text-stone-500">{b.author}</p>
+                              {b.rating && <p className="text-xs text-amber-400">{'★'.repeat(b.rating)}{'☆'.repeat(5 - b.rating)}</p>}
                             </div>
                           </div>
                         ))}
