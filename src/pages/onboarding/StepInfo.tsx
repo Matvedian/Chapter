@@ -121,7 +121,6 @@ export default function StepInfo({ onNext }: Props) {
             ))}
           </div>
         </div>
-      </div>
 
         <div>
           <div className="flex items-baseline justify-between mb-1.5">
@@ -136,6 +135,7 @@ export default function StepInfo({ onNext }: Props) {
             className="w-full px-4 py-3 rounded-xl border border-stone-200 bg-white text-stone-900 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none"
           />
         </div>
+      </div>
 
       <button
         onClick={handleContinue}

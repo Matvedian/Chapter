@@ -59,7 +59,7 @@ export default function ProfileEdit() {
 
   // ── Books ─────────────────────────────────────────────────
   const [selectedBooks, setSelectedBooks] = useState<BookItem[]>([])
-  const [originalBookIds, setOriginalBookIds] = useState<string[]>([])
+  const [originalBooks, setOriginalBooks] = useState<{ userBookId: string; external_id: string }[]>([])
   const [bookQuery, setBookQuery] = useState('')
   const [bookResults, setBookResults] = useState<BookResult[]>([])
   const [bookSearching, setBookSearching] = useState(false)
@@ -87,16 +87,15 @@ export default function ProfileEdit() {
     if (!user) return
     supabase
       .from('user_books')
-      .select('books(source, external_id, title, author, cover_url)')
+      .select('id, books(source, external_id, title, author, cover_url)')
       .eq('user_id', user.id)
       .eq('shelf', 'favorite')
       .then(({ data }) => {
-        const books: BookItem[] = (data ?? [])
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          .map((r: any) => r.books as BookItem | null)
-          .filter((b): b is BookItem => b !== null)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const rows = (data ?? []) as any[]
+        const books: BookItem[] = rows.map(r => r.books as BookItem | null).filter((b): b is BookItem => b !== null)
         setSelectedBooks(books)
-        setOriginalBookIds(books.map(b => b.external_id))
+        setOriginalBooks(rows.map(r => ({ userBookId: r.id as string, external_id: (r.books as BookItem).external_id })))
       })
   }, [user?.id])
 
@@ -195,35 +194,46 @@ export default function ProfileEdit() {
   const saveBooks = async () => {
     if (!user) return
     setBooksSaving(true)
-    await supabase.from('user_books').delete().eq('user_id', user.id).eq('shelf', 'favorite')
 
-    const upsertResults = await Promise.all(
-      selectedBooks.map(book =>
-        supabase
-          .from('books')
-          .upsert(
-            { source: book.source, external_id: book.external_id, title: book.title, author: book.author, cover_url: book.cover_url },
-            { onConflict: 'source,external_id' }
-          )
-          .select('id')
-          .single()
-      )
-    )
-    const bookIds = upsertResults.map(r => r.data?.id).filter((id): id is string => id != null)
+    const selectedIds = new Set(selectedBooks.map(b => b.external_id))
+    const originalIdSet = new Set(originalBooks.map(b => b.external_id))
 
-    if (bookIds.length > 0) {
-      await supabase.from('user_books').insert(
-        bookIds.map(book_id => ({ user_id: user.id, book_id, shelf: 'favorite' }))
+    // Delete only removed books (preserves ratings on other shelves; ratings on removed favorites are intentionally discarded)
+    const removedUserBookIds = originalBooks.filter(b => !selectedIds.has(b.external_id)).map(b => b.userBookId)
+    if (removedUserBookIds.length > 0) {
+      await supabase.from('user_books').delete().in('id', removedUserBookIds)
+    }
+
+    // Upsert only newly added books — existing ones (with their ratings) are left untouched
+    const toAdd = selectedBooks.filter(b => !originalIdSet.has(b.external_id))
+    let allAdded = true
+    for (const book of toAdd) {
+      const { data: bookRow } = await supabase
+        .from('books')
+        .upsert(
+          { source: book.source, external_id: book.external_id, title: book.title, author: book.author, cover_url: book.cover_url },
+          { onConflict: 'source,external_id' }
+        )
+        .select('id')
+        .single()
+      if (!bookRow) { allAdded = false; continue }
+      await supabase.from('user_books').upsert(
+        { user_id: user.id, book_id: bookRow.id, shelf: 'favorite' },
+        { onConflict: 'user_id,book_id' }
       )
     }
+
+    // Refresh to sync new userBookIds into originalBooks state
+    const { data: refreshed } = await supabase
+      .from('user_books')
+      .select('id, books(external_id)')
+      .eq('user_id', user.id)
+      .eq('shelf', 'favorite')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    setOriginalBooks((refreshed ?? []).map((r: any) => ({ userBookId: r.id as string, external_id: r.books.external_id as string })))
 
     setBooksSaving(false)
-    if (bookIds.length === selectedBooks.length) {
-      setOriginalBookIds(selectedBooks.map(b => b.external_id))
-      flash('books', setBooksFeedback, 'saved')
-    } else {
-      flash('books', setBooksFeedback, 'error')
-    }
+    flash('books', setBooksFeedback, allAdded ? 'saved' : 'error')
   }
 
   // ── Dirty checks ──────────────────────────────────────────
@@ -238,7 +248,7 @@ export default function ProfileEdit() {
     JSON.stringify([...selectedGenres].sort()) !== JSON.stringify([...originalGenres].sort())
   const booksDirty =
     JSON.stringify([...selectedBooks.map(b => b.external_id)].sort()) !==
-    JSON.stringify([...originalBookIds].sort())
+    JSON.stringify([...originalBooks.map(b => b.external_id)].sort())
 
   if (!profile || !user) return null
 

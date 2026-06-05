@@ -79,6 +79,7 @@ export default function Chat() {
 
     channelRef.current = channel
     return () => {
+      if (typingTimeout.current) clearTimeout(typingTimeout.current)
       supabase.removeChannel(channel)
       channelRef.current = null
     }

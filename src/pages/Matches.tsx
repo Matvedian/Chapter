@@ -48,6 +48,7 @@ export default function Matches() {
   const [loading, setLoading] = useState(true)
   const [fetchError, setFetchError] = useState(false)
   const [query, setQuery] = useState('')
+  const [loaded, setLoaded] = useState(false)
   const navigate = useNavigate()
   const loadedRef = useRef(false)
 
@@ -98,14 +99,18 @@ export default function Matches() {
     built.sort((a, b) => new Date(b.lastAt!).getTime() - new Date(a.lastAt!).getTime())
     setItems(built)
     setLoading(false)
-    loadedRef.current = true
+    if (!loadedRef.current) {
+      loadedRef.current = true
+      setLoaded(true)
+    }
   }, [user?.id])
 
   useEffect(() => { load() }, [load])
 
-  // Realtime: update list when a new message arrives in any of the user's matches
+  // Realtime: update list when a new message arrives in any of the user's matches.
+  // Depends on `loaded` (one-time flip) rather than `loading` so retries don't tear down the subscription.
   useEffect(() => {
-    if (!user || !loadedRef.current) return
+    if (!user || !loaded) return
 
     const channel = supabase
       .channel('matches-page:messages')
@@ -129,7 +134,7 @@ export default function Matches() {
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
-  }, [user?.id, loading])
+  }, [user?.id, loaded])
 
   const q = query.toLowerCase()
   const filteredItems = q

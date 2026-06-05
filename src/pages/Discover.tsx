@@ -168,9 +168,10 @@ export default function Discover() {
     if (profilesError) { setFetchError(true); setLoading(false); return }
     if (!profiles?.length) { setLoading(false); return }
 
+    const profileMap = Object.fromEntries(profiles.map(p => [p.id, p]))
     const enriched: Candidate[] = ids
       .map(id => {
-        const p = profiles.find(x => x.id === id)
+        const p = profileMap[id]
         return p ? {
           id: p.id,
           name: p.name,
