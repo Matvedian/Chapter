@@ -12,9 +12,16 @@ function stripHtml(html: string): string {
   return new DOMParser().parseFromString(html, 'text/html').body.textContent ?? ''
 }
 
-function truncate(text: string, maxChars = 320): string {
+function truncate(text: string, maxChars = 380): string {
   const clean = text.trim()
   if (clean.length <= maxChars) return clean
+  const slice = clean.slice(0, maxChars)
+  const lastSentence = Math.max(
+    slice.lastIndexOf('. '),
+    slice.lastIndexOf('! '),
+    slice.lastIndexOf('? '),
+  )
+  if (lastSentence > 60) return clean.slice(0, lastSentence + 1)
   return clean.slice(0, clean.lastIndexOf(' ', maxChars)) + '…'
 }
 
@@ -64,7 +71,7 @@ export default function BookDetailModal({
   return (
     <div className="fixed inset-0 z-[100] bg-black/50 flex items-end" onClick={onClose}>
       <div
-        className="w-full bg-white rounded-t-3xl px-6 pt-4 pb-10 max-h-[80vh] flex flex-col"
+        className="w-full bg-white rounded-t-3xl px-6 pt-4 pb-10"
         onClick={e => e.stopPropagation()}
       >
         {/* drag handle */}
@@ -82,7 +89,7 @@ export default function BookDetailModal({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto">
+        <div>
           {loading ? (
             <div className="space-y-2 mt-1">
               <div className="h-3 bg-stone-100 rounded-full w-full skeleton" />
