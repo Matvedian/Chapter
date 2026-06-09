@@ -23,7 +23,7 @@ npx cap run android  # Build and run on Android
 
 **Frontend:** React 19 + TypeScript + Vite. Tailwind CSS v4 via `@tailwindcss/vite` plugin — configured entirely in `vite.config.ts`, no `tailwind.config.js`.
 
-**Mobile:** Capacitor wraps the Vite web build. `capacitor.config.ts` points `webDir` at `dist/`. Run `npx cap sync` after every build before opening native IDEs.
+**Mobile:** Capacitor wraps the Vite web build. `capacitor.config.ts` points `webDir` at `dist/`. Run `npx cap sync` after every build before opening native IDEs. Bundle ID: `com.chapter.app`. For manual simulator installs: `xcrun simctl bootstatus <UDID> -b` to wait for boot, then `xcrun simctl install` + `xcrun simctl launch com.chapter.app`.
 
 **Backend:** Supabase (project `mpzgtfnmhwthzwnnegpt`, region `eu-west-1`). Provides Postgres, Auth, Storage (profile photos in `photos` bucket), and Realtime (chat). Client: `src/lib/supabase.ts`, credentials in `.env` (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`).
 
