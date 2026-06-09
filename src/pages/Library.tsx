@@ -4,6 +4,8 @@ import { supabase } from '../lib/supabase'
 import { searchBooks } from '../lib/bookSearch'
 import type { BookResult } from '../lib/bookSearch'
 import BottomNav from '../components/BottomNav'
+import BookDetailModal from '../components/BookDetailModal'
+import type { DetailBook } from '../components/BookDetailModal'
 
 type Shelf = 'favorite' | 'reading' | 'read' | 'want_to_read'
 
@@ -60,6 +62,7 @@ export default function Library() {
   // Book action sheet
   const [selected, setSelected] = useState<LibraryBook | null>(null)
   const [moving, setMoving] = useState(false)
+  const [detailBook, setDetailBook] = useState<DetailBook | null>(null)
 
   const load = useCallback(async () => {
     if (!user) return
@@ -197,28 +200,31 @@ export default function Library() {
         ) : (
           <div className="grid grid-cols-3 gap-4">
             {visible.map(book => (
-              <button
-                key={book.userBookId}
-                onClick={() => setSelected(book)}
-                className="flex flex-col gap-1.5 text-left"
-              >
-                {book.cover_url ? (
-                  <img
-                    src={book.cover_url}
-                    alt={book.title}
-                    className="w-full aspect-[2/3] object-cover rounded-xl shadow-sm"
-                  />
-                ) : (
-                  <div className="w-full aspect-[2/3] rounded-xl bg-amber-100 flex items-center justify-center text-amber-700 text-xs font-medium text-center px-2">
-                    {book.title.slice(0, 30)}
-                  </div>
-                )}
-                <p className="text-xs font-medium text-stone-900 leading-tight line-clamp-2">{book.title}</p>
-                <p className="text-xs text-stone-400 truncate">{book.author}</p>
-                {book.rating && (
-                  <p className="text-xs text-amber-400 leading-none">{'★'.repeat(book.rating)}{'☆'.repeat(5 - book.rating)}</p>
-                )}
-              </button>
+              <div key={book.userBookId} className="flex flex-col gap-1.5">
+                <button
+                  onClick={() => setDetailBook(book)}
+                  className="w-full"
+                >
+                  {book.cover_url ? (
+                    <img
+                      src={book.cover_url}
+                      alt={book.title}
+                      className="w-full aspect-[2/3] object-cover rounded-xl shadow-sm"
+                    />
+                  ) : (
+                    <div className="w-full aspect-[2/3] rounded-xl bg-amber-100 flex items-center justify-center text-amber-700 text-xs font-medium text-center px-2">
+                      {book.title.slice(0, 30)}
+                    </div>
+                  )}
+                </button>
+                <button onClick={() => setSelected(book)} className="text-left">
+                  <p className="text-xs font-medium text-stone-900 leading-tight line-clamp-2">{book.title}</p>
+                  <p className="text-xs text-stone-400 truncate">{book.author}</p>
+                  {book.rating && (
+                    <p className="text-xs text-amber-400 leading-none">{'★'.repeat(book.rating)}{'☆'.repeat(5 - book.rating)}</p>
+                  )}
+                </button>
+              </div>
             ))}
           </div>
         )}
@@ -249,11 +255,13 @@ export default function Library() {
               const inLib = inLibraryIds.has(book.external_id)
               return (
                 <div key={book.external_id} className="flex items-center gap-3 py-3 border-b border-stone-100">
-                  {book.cover_url ? (
-                    <img src={book.cover_url} alt="" className="w-10 h-14 object-cover rounded flex-shrink-0" />
-                  ) : (
-                    <div className="w-10 h-14 rounded bg-stone-100 flex-shrink-0" />
-                  )}
+                  <button onClick={() => setDetailBook(book)} className="flex-shrink-0">
+                    {book.cover_url ? (
+                      <img src={book.cover_url} alt="" className="w-10 h-14 object-cover rounded" />
+                    ) : (
+                      <div className="w-10 h-14 rounded bg-stone-100" />
+                    )}
+                  </button>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-stone-900 truncate">{book.title}</p>
                     {book.author && <p className="text-xs text-stone-500 truncate">{book.author}</p>}
@@ -279,6 +287,8 @@ export default function Library() {
           </div>
         </div>
       )}
+
+      <BookDetailModal book={detailBook} onClose={() => setDetailBook(null)} />
 
       {/* Book action sheet */}
       {selected && (

@@ -3,6 +3,8 @@ import TinderCard from 'react-tinder-card'
 import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics'
 import { useAuthStore } from '../store/auth'
 import { supabase } from '../lib/supabase'
+import BookDetailModal from '../components/BookDetailModal'
+import type { DetailBook } from '../components/BookDetailModal'
 import BottomNav from '../components/BottomNav'
 
 interface Candidate {
@@ -18,7 +20,7 @@ interface Candidate {
 interface ProfileModal {
   candidate: Candidate
   genres: string[]
-  books: { title: string; author: string; cover_url: string | null; rating: number | null }[]
+  books: { title: string; author: string; cover_url: string | null; rating: number | null; source: string; external_id: string }[]
   loadingExtra: boolean
   photoIndex: number
 }
@@ -143,6 +145,7 @@ export default function Discover() {
   const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set())
   const [cardPhotoIndex, setCardPhotoIndex] = useState<Map<string, number>>(new Map())
   const [profileModal, setProfileModal] = useState<ProfileModal | null>(null)
+  const [detailBook, setDetailBook] = useState<DetailBook | null>(null)
   const topCardRef = useRef<any>(null)
   const swiping = useRef(false)
   const profileLoadRef = useRef<string | null>(null)
@@ -265,7 +268,7 @@ export default function Discover() {
     setProfileModal({ candidate, genres: [], books: [], loadingExtra: true, photoIndex: 0 })
     const [{ data: ugData }, { data: ubData }] = await Promise.all([
       supabase.from('user_genres').select('genres(name)').eq('user_id', candidate.id),
-      supabase.from('user_books').select('rating, books(title, author, cover_url)').eq('user_id', candidate.id).eq('shelf', 'favorite'),
+      supabase.from('user_books').select('rating, books(title, author, cover_url, source, external_id)').eq('user_id', candidate.id).eq('shelf', 'favorite'),
     ])
     if (profileLoadRef.current !== candidate.id) return
     setProfileModal(prev => prev ? {
@@ -614,18 +617,18 @@ export default function Discover() {
                       <p className="text-xs font-semibold text-stone-400 uppercase tracking-wide mb-2">Favourite books</p>
                       <div className="space-y-2">
                         {profileModal.books.map((b, i) => (
-                          <div key={i} className="flex items-center gap-3">
+                          <button key={i} className="flex items-center gap-3 text-left w-full" onClick={() => setDetailBook(b)}>
                             {b.cover_url ? (
-                              <img src={b.cover_url} alt="" className="w-10 h-14 object-cover rounded shadow" />
+                              <img src={b.cover_url} alt="" className="w-10 h-14 object-cover rounded shadow flex-shrink-0" />
                             ) : (
-                              <div className="w-10 h-14 bg-stone-100 rounded shadow flex items-center justify-center text-lg">📖</div>
+                              <div className="w-10 h-14 bg-stone-100 rounded shadow flex items-center justify-center text-lg flex-shrink-0">📖</div>
                             )}
-                            <div>
+                            <div className="min-w-0">
                               <p className="text-sm font-medium text-stone-900">{b.title}</p>
                               <p className="text-xs text-stone-500">{b.author}</p>
                               {b.rating && <p className="text-xs text-amber-400">{'★'.repeat(b.rating)}{'☆'.repeat(5 - b.rating)}</p>}
                             </div>
-                          </div>
+                          </button>
                         ))}
                       </div>
                     </div>
@@ -637,6 +640,8 @@ export default function Discover() {
           </div>
         </div>
       )}
+
+      <BookDetailModal book={detailBook} onClose={() => setDetailBook(null)} />
 
       {/* Filter sheet */}
       {showFilters && (

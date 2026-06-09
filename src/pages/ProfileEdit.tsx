@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import BookDetailModal from '../components/BookDetailModal'
+import type { DetailBook } from '../components/BookDetailModal'
 import {
   DndContext, closestCenter, PointerSensor, TouchSensor,
   useSensor, useSensors, type DragEndEvent,
@@ -130,6 +132,7 @@ export default function ProfileEdit() {
   const [bookQuery, setBookQuery] = useState('')
   const [bookResults, setBookResults] = useState<BookResult[]>([])
   const [bookSearching, setBookSearching] = useState(false)
+  const [detailBook, setDetailBook] = useState<DetailBook | null>(null)
   const [booksSaving, setBooksSaving] = useState(false)
   const [booksFeedback, setBooksFeedback] = useState<Feedback>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -509,22 +512,21 @@ export default function ProfileEdit() {
           {selectedBooks.length > 0 && (
             <div className="flex gap-3 overflow-x-auto pb-3 mb-4 -mx-6 px-6">
               {selectedBooks.map(book => (
-                <button
-                  key={book.external_id}
-                  onClick={() => setSelectedBooks(prev => prev.filter(b => b.external_id !== book.external_id))}
-                  className="flex-shrink-0 relative w-16"
-                >
-                  {book.cover_url ? (
-                    <img src={book.cover_url} alt={book.title} className="w-16 h-24 object-cover rounded-lg shadow" />
-                  ) : (
-                    <div className="w-16 h-24 rounded-lg bg-amber-100 flex items-center justify-center text-amber-700 text-xs font-medium text-center px-1 shadow">
-                      {book.title.slice(0, 20)}
-                    </div>
-                  )}
-                  <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-stone-800 text-white text-xs flex items-center justify-center">
-                    ×
-                  </div>
-                </button>
+                <div key={book.external_id} className="flex-shrink-0 relative w-16">
+                  <button onClick={() => setDetailBook(book)} className="w-16">
+                    {book.cover_url ? (
+                      <img src={book.cover_url} alt={book.title} className="w-16 h-24 object-cover rounded-lg shadow" />
+                    ) : (
+                      <div className="w-16 h-24 rounded-lg bg-amber-100 flex items-center justify-center text-amber-700 text-xs font-medium text-center px-1 shadow">
+                        {book.title.slice(0, 20)}
+                      </div>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setSelectedBooks(prev => prev.filter(b => b.external_id !== book.external_id))}
+                    className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-stone-800 text-white text-xs flex items-center justify-center"
+                  >×</button>
+                </div>
               ))}
             </div>
           )}
@@ -544,32 +546,33 @@ export default function ProfileEdit() {
               {bookResults.map(book => {
                 const isSelected = selectedBooks.some(b => b.external_id === book.external_id)
                 return (
-                  <button
+                  <div
                     key={book.external_id}
-                    onClick={() => toggleBook(book)}
-                    className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-colors text-left ${
-                      isSelected
-                        ? 'border-amber-400 bg-amber-50'
-                        : 'border-stone-200 bg-white hover:border-amber-300'
+                    className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-colors ${
+                      isSelected ? 'border-amber-400 bg-amber-50' : 'border-stone-200 bg-white'
                     }`}
                   >
-                    {book.cover_url ? (
-                      <img src={book.cover_url} alt="" className="w-10 h-14 object-cover rounded flex-shrink-0" />
-                    ) : (
-                      <div className="w-10 h-14 rounded bg-stone-100 flex-shrink-0" />
-                    )}
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-stone-900 truncate">{book.title}</p>
-                      {book.author && (
-                        <p className="text-xs text-stone-500 truncate">{book.author}</p>
+                    <button
+                      onPointerDown={e => e.stopPropagation()}
+                      onClick={() => setDetailBook(book)}
+                      className="flex-shrink-0"
+                    >
+                      {book.cover_url ? (
+                        <img src={book.cover_url} alt="" className="w-10 h-14 object-cover rounded" />
+                      ) : (
+                        <div className="w-10 h-14 rounded bg-stone-100" />
                       )}
-                    </div>
-                    {isSelected && (
-                      <div className="ml-auto flex-shrink-0 w-5 h-5 rounded-full bg-amber-400 flex items-center justify-center text-stone-900 text-xs">
-                        ✓
+                    </button>
+                    <button onClick={() => toggleBook(book)} className="flex-1 min-w-0 text-left flex items-center gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-stone-900 truncate">{book.title}</p>
+                        {book.author && <p className="text-xs text-stone-500 truncate">{book.author}</p>}
                       </div>
-                    )}
-                  </button>
+                      {isSelected && (
+                        <div className="flex-shrink-0 w-5 h-5 rounded-full bg-amber-400 flex items-center justify-center text-stone-900 text-xs">✓</div>
+                      )}
+                    </button>
+                  </div>
                 )
               })}
             </div>
@@ -587,6 +590,8 @@ export default function ProfileEdit() {
         </section>
 
       </div>
+
+      <BookDetailModal book={detailBook} onClose={() => setDetailBook(null)} />
     </div>
   )
 }

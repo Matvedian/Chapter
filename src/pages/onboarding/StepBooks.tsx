@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { searchBooks } from '../../lib/bookSearch'
 import type { BookResult } from '../../lib/bookSearch'
 import type { OnboardingData, SelectedBook } from './index'
+import BookDetailModal from '../../components/BookDetailModal'
+import type { DetailBook } from '../../components/BookDetailModal'
 
 interface Props {
   onNext: (patch: Partial<OnboardingData>) => void
@@ -13,6 +15,7 @@ export default function StepBooks({ onNext, submitting }: Props) {
   const [results, setResults] = useState<BookResult[]>([])
   const [searching, setSearching] = useState(false)
   const [selected, setSelected] = useState<SelectedBook[]>([])
+  const [detailBook, setDetailBook] = useState<DetailBook | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -89,36 +92,29 @@ export default function StepBooks({ onNext, submitting }: Props) {
       {!searching && results.length > 0 && (
         <div className="space-y-2 mb-8">
           {results.map(book => (
-            <button
+            <div
               key={book.external_id}
-              onClick={() => toggle(book)}
-              className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-colors text-left ${
-                isSelected(book.external_id)
-                  ? 'border-amber-400 bg-amber-50'
-                  : 'border-stone-200 bg-white hover:border-amber-300'
+              className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-colors ${
+                isSelected(book.external_id) ? 'border-amber-400 bg-amber-50' : 'border-stone-200 bg-white'
               }`}
             >
-              {book.cover_url ? (
-                <img
-                  src={book.cover_url}
-                  alt=""
-                  className="w-10 h-14 object-cover rounded flex-shrink-0"
-                />
-              ) : (
-                <div className="w-10 h-14 rounded bg-stone-100 flex-shrink-0" />
-              )}
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-stone-900 truncate">{book.title}</p>
-                {book.author && (
-                  <p className="text-xs text-stone-500 truncate">{book.author}</p>
+              <button onClick={() => setDetailBook(book)} className="flex-shrink-0">
+                {book.cover_url ? (
+                  <img src={book.cover_url} alt="" className="w-10 h-14 object-cover rounded" />
+                ) : (
+                  <div className="w-10 h-14 rounded bg-stone-100" />
                 )}
-              </div>
-              {isSelected(book.external_id) && (
-                <div className="ml-auto flex-shrink-0 w-5 h-5 rounded-full bg-amber-400 flex items-center justify-center text-stone-900 text-xs">
-                  ✓
+              </button>
+              <button onClick={() => toggle(book)} className="flex-1 min-w-0 text-left flex items-center gap-2">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-stone-900 truncate">{book.title}</p>
+                  {book.author && <p className="text-xs text-stone-500 truncate">{book.author}</p>}
                 </div>
-              )}
-            </button>
+                {isSelected(book.external_id) && (
+                  <div className="ml-auto flex-shrink-0 w-5 h-5 rounded-full bg-amber-400 flex items-center justify-center text-stone-900 text-xs">✓</div>
+                )}
+              </button>
+            </div>
           ))}
         </div>
       )}
@@ -137,6 +133,8 @@ export default function StepBooks({ onNext, submitting }: Props) {
       >
         Skip for now
       </button>
+
+      <BookDetailModal book={detailBook} onClose={() => setDetailBook(null)} />
     </div>
   )
 }
