@@ -43,7 +43,7 @@ export async function searchGoogleBooks(query: string): Promise<BookResult[]> {
     ])
     const seen = new Set<string>()
     const merged: BookResult[] = []
-    for (const book of [...general, ...byAuthor]) {
+    for (const book of [...byAuthor, ...general]) {
       if (!seen.has(book.external_id)) {
         seen.add(book.external_id)
         merged.push(book)
