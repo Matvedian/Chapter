@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Browser } from '@capacitor/browser'
+// SPOTIFY STANDBY: import { Browser } from '@capacitor/browser'
 import { useAuthStore } from '../store/auth'
 import { useProfileStore } from '../store/profile'
 import { supabase } from '../lib/supabase'
-import { generateCodeVerifier, getAuthUrl, getSavedAudiobooks, refreshAccessToken } from '../lib/spotify'
+// SPOTIFY STANDBY: import { generateCodeVerifier, getAuthUrl, getSavedAudiobooks, refreshAccessToken } from '../lib/spotify'
 import BottomNav from '../components/BottomNav'
 
 function getAge(birthDate: string): number {
@@ -16,11 +16,7 @@ function getAge(birthDate: string): number {
   return age
 }
 
-interface SpotifyConnection {
-  access_token: string
-  refresh_token: string | null
-  expires_at: string | null
-}
+// SPOTIFY STANDBY: interface SpotifyConnection { access_token: string; refresh_token: string | null; expires_at: string | null }
 
 type DeleteState = 'idle' | 'confirming' | 'deleting' | 'error'
 
@@ -29,10 +25,10 @@ export default function Profile() {
   const { profile, fetch: fetchProfile } = useProfileStore()
   const navigate = useNavigate()
 
-  const [spotify, setSpotify] = useState<SpotifyConnection | null>(null)
-  const [spotifyLoading, setSpotifyLoading] = useState(true)
-  const [spotifyWorking, setSpotifyWorking] = useState(false)
-  const [importDone, setImportDone] = useState(false)
+  // SPOTIFY STANDBY: const [spotify, setSpotify] = useState<SpotifyConnection | null>(null)
+  // SPOTIFY STANDBY: const [spotifyLoading, setSpotifyLoading] = useState(true)
+  // SPOTIFY STANDBY: const [spotifyWorking, setSpotifyWorking] = useState(false)
+  // SPOTIFY STANDBY: const [importDone, setImportDone] = useState(false)
 
   const [pauseWorking, setPauseWorking] = useState(false)
   const [showPauseConfirm, setShowPauseConfirm] = useState(false)
@@ -43,75 +39,42 @@ export default function Profile() {
   const photo = profile?.photos?.[0] ?? null
   const age = profile?.birth_date ? getAge(profile.birth_date) : null
 
-  useEffect(() => {
-    if (!user) return
-    supabase
-      .from('platform_connections')
-      .select('access_token, refresh_token, expires_at')
-      .eq('user_id', user.id)
-      .eq('platform', 'spotify')
-      .maybeSingle()
-      .then(({ data }) => {
-        setSpotify(data ?? null)
-        setSpotifyLoading(false)
-      })
-  }, [user?.id])
-
-  const connectSpotify = async () => {
-    const verifier = generateCodeVerifier()
-    sessionStorage.setItem('spotify_code_verifier', verifier)
-    const url = await getAuthUrl(verifier)
-    await Browser.open({ url, presentationStyle: 'popover' })
-  }
-
-  const disconnectSpotify = async () => {
-    if (!user) return
-    setSpotifyWorking(true)
-    await supabase.from('platform_connections').delete().eq('user_id', user.id).eq('platform', 'spotify')
-    setSpotify(null)
-    setSpotifyWorking(false)
-  }
-
-  const reimportAudiobooks = async () => {
-    if (!spotify || !user) return
-    setSpotifyWorking(true)
-    setImportDone(false)
-    try {
-      let token = spotify.access_token
-      // Refresh if expired
-      if (spotify.expires_at && new Date(spotify.expires_at) <= new Date() && spotify.refresh_token) {
-        const refreshed = await refreshAccessToken(spotify.refresh_token)
-        token = refreshed.access_token
-        await supabase.from('platform_connections').update({
-          access_token: refreshed.access_token,
-          refresh_token: refreshed.refresh_token,
-          expires_at: refreshed.expires_at,
-        }).eq('user_id', user.id).eq('platform', 'spotify')
-        setSpotify(prev => prev ? { ...prev, ...refreshed } : prev)
-      }
-      const audiobooks = await getSavedAudiobooks(token)
-      for (const book of audiobooks) {
-        const { data: bookRow } = await supabase
-          .from('books')
-          .upsert(
-            { source: book.source, external_id: book.external_id, title: book.title, author: book.author, cover_url: book.cover_url },
-            { onConflict: 'source,external_id' }
-          )
-          .select('id')
-          .single()
-        if (bookRow) {
-          await supabase.from('user_books').upsert(
-            { user_id: user.id, book_id: bookRow.id, shelf: 'favorite' },
-            { onConflict: 'user_id,book_id' }
-          )
-        }
-      }
-      setImportDone(true)
-    } catch {
-      // ignore
-    }
-    setSpotifyWorking(false)
-  }
+  // SPOTIFY STANDBY — re-enable when VITE_SPOTIFY_CLIENT_ID is configured
+  // useEffect(() => {
+  //   if (!user) return
+  //   supabase.from('platform_connections').select('access_token, refresh_token, expires_at')
+  //     .eq('user_id', user.id).eq('platform', 'spotify').maybeSingle()
+  //     .then(({ data }) => { setSpotify(data ?? null); setSpotifyLoading(false) })
+  // }, [user?.id])
+  // const connectSpotify = async () => {
+  //   const verifier = generateCodeVerifier(); sessionStorage.setItem('spotify_code_verifier', verifier)
+  //   await Browser.open({ url: await getAuthUrl(verifier), presentationStyle: 'popover' })
+  // }
+  // const disconnectSpotify = async () => {
+  //   if (!user) return; setSpotifyWorking(true)
+  //   await supabase.from('platform_connections').delete().eq('user_id', user.id).eq('platform', 'spotify')
+  //   setSpotify(null); setSpotifyWorking(false)
+  // }
+  // const reimportAudiobooks = async () => {
+  //   if (!spotify || !user) return; setSpotifyWorking(true); setImportDone(false)
+  //   try {
+  //     let token = spotify.access_token
+  //     if (spotify.expires_at && new Date(spotify.expires_at) <= new Date() && spotify.refresh_token) {
+  //       const refreshed = await refreshAccessToken(spotify.refresh_token); token = refreshed.access_token
+  //       await supabase.from('platform_connections').update(refreshed).eq('user_id', user.id).eq('platform', 'spotify')
+  //       setSpotify(prev => prev ? { ...prev, ...refreshed } : prev)
+  //     }
+  //     const audiobooks = await getSavedAudiobooks(token)
+  //     for (const book of audiobooks) {
+  //       const { data: bookRow } = await supabase.from('books')
+  //         .upsert({ source: book.source, external_id: book.external_id, title: book.title, author: book.author, cover_url: book.cover_url }, { onConflict: 'source,external_id' })
+  //         .select('id').single()
+  //       if (bookRow) await supabase.from('user_books').upsert({ user_id: user.id, book_id: bookRow.id, shelf: 'favorite' }, { onConflict: 'user_id,book_id' })
+  //     }
+  //     setImportDone(true)
+  //   } catch { } // ignore
+  //   setSpotifyWorking(false)
+  // }
 
   const togglePause = async (newPaused: boolean) => {
     if (!user) return
@@ -190,55 +153,7 @@ export default function Profile() {
           Edit profile
         </button>
 
-        {/* Connected platforms */}
-        <section className="bg-white rounded-2xl border border-stone-100 px-5 py-4 mb-3">
-          <p className="text-xs font-semibold text-stone-400 uppercase tracking-wide mb-3">Connected platforms</p>
-
-          {spotifyLoading ? (
-            <div className="h-10 rounded-xl skeleton" />
-          ) : spotify ? (
-            <div>
-              <div className="flex items-center gap-3 mb-3">
-                <SpotifyIcon />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-stone-900">Spotify</p>
-                  <p className="text-xs text-green-600">Connected</p>
-                </div>
-              </div>
-              {importDone && (
-                <p className="text-xs text-green-600 mb-2">Audiobooks imported to your library.</p>
-              )}
-              <div className="flex gap-2">
-                <button
-                  disabled={spotifyWorking}
-                  onClick={reimportAudiobooks}
-                  className="flex-1 py-2 rounded-xl bg-amber-400 text-stone-900 text-sm font-medium disabled:opacity-40"
-                >
-                  {spotifyWorking ? 'Importing…' : 'Re-import audiobooks'}
-                </button>
-                <button
-                  disabled={spotifyWorking}
-                  onClick={disconnectSpotify}
-                  className="py-2 px-4 rounded-xl border border-stone-200 text-stone-500 text-sm disabled:opacity-40"
-                >
-                  Disconnect
-                </button>
-              </div>
-            </div>
-          ) : (
-            <button
-              onClick={connectSpotify}
-              className="w-full flex items-center gap-3 py-3 px-4 rounded-xl border border-stone-200 hover:border-green-400 transition-colors"
-            >
-              <SpotifyIcon />
-              <div className="text-left">
-                <p className="text-sm font-semibold text-stone-900">Spotify</p>
-                <p className="text-xs text-stone-400">Import your saved audiobooks</p>
-              </div>
-              <span className="ml-auto text-stone-300 text-lg">›</span>
-            </button>
-          )}
-        </section>
+        {/* SPOTIFY STANDBY: Connected platforms section hidden until Client ID is configured */}
 
         {/* Pause profile */}
         <section className="bg-white rounded-2xl border border-stone-100 px-5 py-4 mb-3">
@@ -336,11 +251,4 @@ export default function Profile() {
   )
 }
 
-function SpotifyIcon() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="12" cy="12" r="12" fill="#1DB954" />
-      <path d="M16.7 10.9c-2.7-1.6-7.2-1.8-9.8-1a.77.77 0 0 1-.95-.52.77.77 0 0 1 .52-.95c3-.9 8-.7 11.1 1.1a.77.77 0 0 1 .27 1.06.77.77 0 0 1-1.06.27zm-.1 2.7a.64.64 0 0 1-.88.21c-2.3-1.4-5.8-1.8-8.5-1a.64.64 0 0 1-.79-.43.64.64 0 0 1 .43-.8c3.1-.94 7-.48 9.6 1.15a.64.64 0 0 1 .21.87zm-.9 2.6a.51.51 0 0 1-.7.17c-2-1.2-4.5-1.47-7.4-.8a.51.51 0 0 1-.23-1c3.1-.7 5.9-.4 8.2.93a.51.51 0 0 1 .13.7z" fill="white" />
-    </svg>
-  )
-}
+// SPOTIFY STANDBY: SpotifyIcon component preserved in git history
