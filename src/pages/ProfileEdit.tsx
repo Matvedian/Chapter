@@ -1,5 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import {
+  DndContext, closestCenter, PointerSensor, TouchSensor,
+  useSensor, useSensors, type DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  SortableContext, rectSortingStrategy, useSortable,
+  arrayMove,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { useAuthStore } from '../store/auth'
 import { useProfileStore } from '../store/profile'
 import { supabase } from '../lib/supabase'
@@ -29,6 +38,49 @@ const maxBirthDate = (() => {
 
 type Feedback = 'saved' | 'error' | null
 
+function SortablePhoto({
+  url, index, onRemove, onSetMain,
+}: { url: string; index: number; onRemove: () => void; onSetMain: () => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: url })
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+    zIndex: isDragging ? 50 : undefined,
+  }
+  return (
+    <div ref={setNodeRef} style={style} className="relative aspect-square rounded-2xl overflow-hidden bg-stone-200 touch-none">
+      <img
+        src={url} alt=""
+        className="w-full h-full object-cover cursor-grab active:cursor-grabbing"
+        {...attributes} {...listeners}
+      />
+      {index === 0 ? (
+        <span className="absolute bottom-1.5 left-1.5 text-[10px] font-semibold bg-amber-400 text-stone-900 px-1.5 py-0.5 rounded-full leading-none">
+          Profile
+        </span>
+      ) : (
+        <button
+          onPointerDown={e => e.stopPropagation()}
+          onClick={onSetMain}
+          className="absolute bottom-1.5 left-1.5 w-6 h-6 rounded-full bg-stone-900/60 text-amber-400 text-xs flex items-center justify-center"
+          aria-label="Set as profile photo"
+        >
+          ★
+        </button>
+      )}
+      <button
+        onPointerDown={e => e.stopPropagation()}
+        onClick={onRemove}
+        className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-stone-900/60 text-white text-xs flex items-center justify-center"
+        aria-label="Remove photo"
+      >
+        ×
+      </button>
+    </div>
+  )
+}
+
 export default function ProfileEdit() {
   const { user } = useAuthStore()
   const { profile, fetch: fetchProfile } = useProfileStore()
@@ -40,6 +92,21 @@ export default function ProfileEdit() {
   const [photosSaving, setPhotosSaving] = useState(false)
   const [photosFeedback, setPhotosFeedback] = useState<Feedback>(null)
   const photoInputRef = useRef<HTMLInputElement>(null)
+
+  const dndSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+  )
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+    if (over && active.id !== over.id) {
+      setPhotos(prev => {
+        const oldIndex = prev.indexOf(active.id as string)
+        const newIndex = prev.indexOf(over.id as string)
+        return arrayMove(prev, oldIndex, newIndex)
+      })
+    }
+  }
 
   // ── Info ──────────────────────────────────────────────────
   const [name, setName] = useState(profile?.name ?? '')
@@ -272,31 +339,31 @@ export default function ProfileEdit() {
         {/* ── Photos ── */}
         <section className="bg-white border-b border-stone-100 px-6 py-6">
           <h2 className="text-base font-semibold text-stone-900 mb-4">Photos</h2>
-          <div className="grid grid-cols-3 gap-3 mb-4">
-            {Array.from({ length: 6 }).map((_, i) => {
-              const url = photos[i]
-              return url ? (
-                <div key={i} className="relative aspect-square rounded-2xl overflow-hidden bg-stone-200">
-                  <img src={url} alt="" className="w-full h-full object-cover" />
+          <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={photos} strategy={rectSortingStrategy}>
+              <div className="grid grid-cols-3 gap-3 mb-4">
+                {photos.map((url, i) => (
+                  <SortablePhoto
+                    key={url}
+                    url={url}
+                    index={i}
+                    onRemove={() => setPhotos(prev => prev.filter((_, j) => j !== i))}
+                    onSetMain={() => setPhotos(prev => arrayMove(prev, i, 0))}
+                  />
+                ))}
+                {photos.length < 6 && Array.from({ length: 6 - photos.length }).map((_, i) => (
                   <button
-                    onClick={() => setPhotos(prev => prev.filter((_, j) => j !== i))}
-                    className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-stone-900/60 text-white text-xs flex items-center justify-center"
+                    key={`empty-${i}`}
+                    onClick={() => photoInputRef.current?.click()}
+                    disabled={photoUploading}
+                    className="aspect-square rounded-2xl border-2 border-dashed border-stone-300 flex items-center justify-center text-stone-400 hover:border-amber-400 hover:text-amber-500 transition-colors disabled:opacity-40"
                   >
-                    ×
+                    <span className="text-2xl">+</span>
                   </button>
-                </div>
-              ) : (
-                <button
-                  key={i}
-                  onClick={() => photoInputRef.current?.click()}
-                  disabled={photoUploading}
-                  className="aspect-square rounded-2xl border-2 border-dashed border-stone-300 flex items-center justify-center text-stone-400 hover:border-amber-400 hover:text-amber-500 transition-colors disabled:opacity-40"
-                >
-                  <span className="text-2xl">+</span>
-                </button>
-              )
-            })}
-          </div>
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
           <input
             ref={photoInputRef}
             type="file"
