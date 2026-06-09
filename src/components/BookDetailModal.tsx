@@ -8,6 +8,16 @@ export interface DetailBook {
   cover_url: string | null
 }
 
+function stripHtml(html: string): string {
+  return new DOMParser().parseFromString(html, 'text/html').body.textContent ?? ''
+}
+
+function truncate(text: string, maxChars = 320): string {
+  const clean = text.trim()
+  if (clean.length <= maxChars) return clean
+  return clean.slice(0, clean.lastIndexOf(' ', maxChars)) + '…'
+}
+
 async function fetchDescription(book: DetailBook): Promise<string | null> {
   try {
     if (book.source === 'google_books') {
@@ -16,7 +26,8 @@ async function fetchDescription(book: DetailBook): Promise<string | null> {
       const res = await fetch(url)
       if (!res.ok) return null
       const data = await res.json()
-      return (data.volumeInfo?.description as string | undefined) ?? null
+      const raw = data.volumeInfo?.description as string | undefined
+      return raw ? truncate(stripHtml(raw)) : null
     }
     if (book.source === 'open_library') {
       const key = book.external_id.startsWith('/') ? book.external_id : `/works/${book.external_id}`
@@ -25,7 +36,8 @@ async function fetchDescription(book: DetailBook): Promise<string | null> {
       const data = await res.json()
       const desc = data.description
       if (!desc) return null
-      return typeof desc === 'string' ? desc : (desc as { value: string }).value ?? null
+      const raw = typeof desc === 'string' ? desc : (desc as { value: string }).value ?? ''
+      return raw ? truncate(stripHtml(raw)) : null
     }
   } catch { /* ignore */ }
   return null
