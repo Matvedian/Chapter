@@ -553,8 +553,7 @@ export default function ProfileEdit() {
                     }`}
                   >
                     <button
-                      onPointerDown={e => e.stopPropagation()}
-                      onClick={() => setDetailBook(book)}
+                      onClick={e => { e.stopPropagation(); setDetailBook(book) }}
                       className="flex-shrink-0"
                     >
                       {book.cover_url ? (

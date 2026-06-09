@@ -50,7 +50,7 @@ export default function BookDetailModal({
   if (!book) return null
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-end" onClick={onClose}>
+    <div className="fixed inset-0 z-[100] bg-black/50 flex items-end" onClick={onClose}>
       <div
         className="w-full bg-white rounded-t-3xl px-6 pt-4 pb-10 max-h-[80vh] flex flex-col"
         onClick={e => e.stopPropagation()}
