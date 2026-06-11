@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import VerifiedBadge from '../components/VerifiedBadge'
 import { Button, Chip, Spinner, Textarea } from '../components/ui'
 import { useAuthStore } from '../store/auth'
 import { supabase } from '../lib/supabase'
@@ -16,6 +17,7 @@ interface Partner {
   id: string | null
   name: string | null
   photo: string | null
+  identity_verified: boolean
 }
 
 const REPORT_REASONS = [
@@ -34,7 +36,7 @@ export default function Chat() {
   const { matchId } = useParams<{ matchId: string }>()
   const { user } = useAuthStore()
   const [messages, setMessages] = useState<Message[]>([])
-  const [partner, setPartner] = useState<Partner>({ id: null, name: null, photo: null })
+  const [partner, setPartner] = useState<Partner>({ id: null, name: null, photo: null, identity_verified: false })
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
   const [sendError, setSendError] = useState(false)
@@ -105,8 +107,8 @@ export default function Chat() {
     // Profile fetch uses otherId from match — fire after parallel pair resolves
     if (match) {
       const otherId = match.user1_id === user!.id ? match.user2_id : match.user1_id
-      supabase.from('profiles').select('name, photos').eq('id', otherId).single().then(({ data: p }) => {
-        if (p) setPartner({ id: otherId, name: p.name, photo: p.photos?.[0] ?? null })
+      supabase.from('profiles').select('name, photos, identity_verified').eq('id', otherId).single().then(({ data: p }) => {
+        if (p) setPartner({ id: otherId, name: p.name, photo: p.photos?.[0] ?? null, identity_verified: p.identity_verified ?? false })
       })
     }
 
@@ -204,7 +206,10 @@ export default function Chat() {
         ) : (
           <div className="w-9 h-9 rounded-full bg-brand-subtle flex items-center justify-center text-base">📖</div>
         )}
-        <p className="font-semibold text-ink flex-1">{partner.name ?? 'Reader'}</p>
+        <div className="flex items-center gap-1.5 flex-1 min-w-0">
+          <p className="font-semibold text-ink truncate">{partner.name ?? 'Reader'}</p>
+          {partner.identity_verified && <VerifiedBadge className="flex-shrink-0" />}
+        </div>
         <div className="relative">
           <button
             onClick={() => setShowMenu(m => !m)}

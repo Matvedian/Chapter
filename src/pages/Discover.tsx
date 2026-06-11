@@ -5,20 +5,15 @@ import { useAuthStore } from '../store/auth'
 import { supabase } from '../lib/supabase'
 import BookDetailModal from '../components/BookDetailModal'
 import type { DetailBook } from '../components/BookDetailModal'
+import BookLikeSheet from '../components/discover/BookLikeSheet'
+import DiscoverCard from '../components/discover/DiscoverCard'
+import VerifiedBadge from '../components/VerifiedBadge'
 import BottomNav from '../components/BottomNav'
-
-interface Candidate {
-  id: string
-  name: string | null
-  birth_date: string | null
-  photos: string[]
-  score: number
-  gender: string | null
-  bio: string | null
-}
+import { Button } from '../components/ui'
+import type { CandidateBook, DiscoverCandidate } from '../types/discover'
 
 interface ProfileModal {
-  candidate: Candidate
+  candidate: DiscoverCandidate
   genres: string[]
   books: { title: string; author: string; cover_url: string | null; rating: number | null; source: string; external_id: string }[]
   loadingExtra: boolean
@@ -43,7 +38,7 @@ function getAge(birthDate: string): number {
   return age
 }
 
-function applyFilters(candidates: Candidate[], f: Filters): Candidate[] {
+function applyFilters(candidates: DiscoverCandidate[], f: Filters): DiscoverCandidate[] {
   return candidates.filter(c => {
     if (c.birth_date) {
       const age = getAge(c.birth_date)
@@ -132,8 +127,8 @@ function DualRangeSlider({ min, max, low, high, onChange }: {
 
 export default function Discover() {
   const { user } = useAuthStore()
-  const [allCandidates, setAllCandidates] = useState<Candidate[]>([])
-  const [candidates, setCandidates] = useState<Candidate[]>([])
+  const [allCandidates, setAllCandidates] = useState<DiscoverCandidate[]>([])
+  const [candidates, setCandidates] = useState<DiscoverCandidate[]>([])
   const [loading, setLoading] = useState(true)
   const [fetchError, setFetchError] = useState(false)
   const [currentIndex, setCurrentIndex] = useState(-1)
@@ -146,8 +141,12 @@ export default function Discover() {
   const [cardPhotoIndex, setCardPhotoIndex] = useState<Map<string, number>>(new Map())
   const [profileModal, setProfileModal] = useState<ProfileModal | null>(null)
   const [detailBook, setDetailBook] = useState<DetailBook | null>(null)
+  const [bookLike, setBookLike] = useState<{ candidate: DiscoverCandidate; book: CandidateBook } | null>(null)
+  const [bookLikeComment, setBookLikeComment] = useState('')
+  const [bookLikeSending, setBookLikeSending] = useState(false)
   const topCardRef = useRef<any>(null)
   const swiping = useRef(false)
+  const skipNextSwipeRecord = useRef(false)
   const profileLoadRef = useRef<string | null>(null)
 
   const loadCandidates = useCallback(async () => {
@@ -159,33 +158,79 @@ export default function Discover() {
     if (rpcError) { setFetchError(true); setLoading(false); return }
     if (!rpcData?.length) { setLoading(false); return }
 
-    const rows = rpcData as { profile_id: string; score: number }[]
+    const rows = rpcData as { profile_id: string; score: number; shared_books?: number; shared_genres?: number }[]
     const ids = rows.map(r => r.profile_id)
-    const scoreMap = Object.fromEntries(rows.map(r => [r.profile_id, r.score]))
+    const metaMap = Object.fromEntries(rows.map(r => [r.profile_id, r]))
 
-    const { data: profiles, error: profilesError } = await supabase
-      .from('profiles')
-      .select('id, name, birth_date, photos, gender, bio')
-      .in('id', ids)
+    const [
+      { data: profiles, error: profilesError },
+      { data: ubRows },
+      { data: ugRows },
+      { data: myBooks },
+    ] = await Promise.all([
+      supabase.from('profiles').select('id, name, birth_date, photos, gender, bio, identity_verified').in('id', ids),
+      supabase.from('user_books').select('user_id, book_id, books(id, title, author, cover_url, source, external_id)').in('user_id', ids).eq('shelf', 'favorite'),
+      supabase.from('user_genres').select('user_id, genres(name)').in('user_id', ids),
+      supabase.from('user_books').select('book_id').eq('user_id', user.id),
+    ])
 
     if (profilesError) { setFetchError(true); setLoading(false); return }
     if (!profiles?.length) { setLoading(false); return }
 
+    const myBookIds = new Set((myBooks ?? []).map(r => r.book_id))
+
+    const booksByUser = new Map<string, CandidateBook[]>()
+    for (const row of ubRows ?? []) {
+      const r = row as unknown as { user_id: string; book_id: string; books: { id: string; title: string; author: string; cover_url: string | null; source: string; external_id: string } | null }
+      const b = r.books
+      if (!b) continue
+      const list = booksByUser.get(r.user_id) ?? []
+      list.push({
+        book_id: b.id,
+        title: b.title,
+        author: b.author,
+        cover_url: b.cover_url,
+        source: b.source,
+        external_id: b.external_id,
+        shared: myBookIds.has(b.id),
+      })
+      booksByUser.set(r.user_id, list)
+    }
+
+    const genresByUser = new Map<string, string[]>()
+    for (const row of ugRows ?? []) {
+      const r = row as unknown as { user_id: string; genres: { name: string } | null }
+      const name = r.genres?.name
+      if (!name) continue
+      const list = genresByUser.get(r.user_id) ?? []
+      list.push(name)
+      genresByUser.set(r.user_id, list)
+    }
+
     const profileMap = Object.fromEntries(profiles.map(p => [p.id, p]))
-    const enriched: Candidate[] = ids
+    const enriched: DiscoverCandidate[] = ids
       .map(id => {
         const p = profileMap[id]
-        return p ? {
+        const meta = metaMap[id]
+        if (!p) return null
+        const sharedBooks = meta?.shared_books ?? Math.floor((meta?.score ?? 0) / 3)
+        const sharedGenres = meta?.shared_genres ?? (meta?.score ?? 0) % 3
+        return {
           id: p.id,
           name: p.name,
           birth_date: p.birth_date,
           photos: p.photos ?? [],
-          score: scoreMap[id] ?? 0,
+          score: meta?.score ?? 0,
+          sharedBooks,
+          sharedGenres,
           gender: p.gender ?? null,
           bio: p.bio ?? null,
-        } : null
+          identity_verified: p.identity_verified ?? false,
+          books: booksByUser.get(id) ?? [],
+          genres: genresByUser.get(id) ?? [],
+        }
       })
-      .filter((c): c is Candidate => c !== null)
+      .filter((c): c is DiscoverCandidate => c !== null)
 
     setAllCandidates(enriched)
     setLoading(false)
@@ -200,29 +245,62 @@ export default function Discover() {
     setCurrentIndex(filtered.length - 1)
   }, [allCandidates, filters])
 
-  const handleSwipe = useCallback(async (direction: string, candidate: Candidate) => {
+  const checkForMatch = useCallback(async (candidate: DiscoverCandidate) => {
+    const { data: match } = await supabase
+      .from('matches')
+      .select('id')
+      .or(`and(user1_id.eq.${user!.id},user2_id.eq.${candidate.id}),and(user1_id.eq.${candidate.id},user2_id.eq.${user!.id})`)
+      .maybeSingle()
+    if (match) {
+      Haptics.notification({ type: NotificationType.Success })
+      setMatchName(candidate.name ?? 'Someone')
+    }
+  }, [user?.id])
+
+  const handleSwipe = useCallback(async (direction: string, candidate: DiscoverCandidate) => {
     setSwipeDir(null)
     const dirValue = direction === 'right' ? 'like' : 'pass'
     Haptics.impact({ style: dirValue === 'like' ? ImpactStyle.Medium : ImpactStyle.Light })
 
-    await supabase.from('swipes').insert({
-      swiper_id: user!.id,
-      swiped_id: candidate.id,
-      direction: dirValue,
-    })
+    if (!skipNextSwipeRecord.current) {
+      await supabase.from('swipes').insert({
+        swiper_id: user!.id,
+        swiped_id: candidate.id,
+        direction: dirValue,
+      })
+    } else {
+      skipNextSwipeRecord.current = false
+    }
 
     if (dirValue === 'like') {
-      const { data: match } = await supabase
-        .from('matches')
-        .select('id')
-        .or(`and(user1_id.eq.${user!.id},user2_id.eq.${candidate.id}),and(user1_id.eq.${candidate.id},user2_id.eq.${user!.id})`)
-        .maybeSingle()
-      if (match) {
-        Haptics.notification({ type: NotificationType.Success })
-        setMatchName(candidate.name ?? 'Someone')
-      }
+      await checkForMatch(candidate)
     }
-  }, [user?.id])
+  }, [user?.id, checkForMatch])
+
+  const submitBookLike = async () => {
+    if (!bookLike || !user || bookLikeSending) return
+    setBookLikeSending(true)
+    const { candidate, book } = bookLike
+
+    await supabase.from('swipes').insert({
+      swiper_id: user.id,
+      swiped_id: candidate.id,
+      direction: 'like',
+      book_id: book.book_id,
+      comment: bookLikeComment.trim() || null,
+    })
+
+    await checkForMatch(candidate)
+    setBookLike(null)
+    setBookLikeComment('')
+    setBookLikeSending(false)
+
+    if (topCardRef.current && currentIndex >= 0) {
+      skipNextSwipeRecord.current = true
+      swiping.current = true
+      await topCardRef.current.swipe('right')
+    }
+  }
 
   const handleCardLeft = useCallback(() => {
     swiping.current = false
@@ -263,7 +341,7 @@ export default function Discover() {
     })
   }
 
-  const openProfile = async (candidate: Candidate) => {
+  const openProfile = async (candidate: DiscoverCandidate) => {
     profileLoadRef.current = candidate.id
     setProfileModal({ candidate, genres: [], books: [], loadingExtra: true, photoIndex: 0 })
     const [{ data: ugData }, { data: ubData }] = await Promise.all([
@@ -288,7 +366,7 @@ export default function Discover() {
           <div className="w-8" />
         </div>
         <div className="flex-1 flex items-center justify-center overflow-hidden">
-          <div className="rounded-3xl skeleton" style={{ width: 320, height: 480 }} />
+          <div className="rounded-card skeleton" style={{ width: 320, height: 520 }} />
         </div>
         <div className="flex-shrink-0 flex justify-center gap-8 py-5">
           <div className="w-16 h-16 rounded-full skeleton" />
@@ -331,12 +409,9 @@ export default function Discover() {
             <div className="text-center px-8">
               <h2 className="text-xl font-bold text-ink">Something went wrong</h2>
               <p className="text-muted text-sm mt-2">Couldn't load profiles. Check your connection.</p>
-              <button
-                onClick={loadCandidates}
-                className="mt-5 px-5 py-2.5 rounded-xl bg-brand text-ink font-semibold text-sm"
-              >
+              <Button onClick={loadCandidates} size="sm" className="mt-5">
                 Try again
-              </button>
+              </Button>
             </div>
           ) : (
             <div className="text-center px-8">
@@ -350,23 +425,18 @@ export default function Discover() {
                   : "You've seen everyone. Check back as more readers join."}
               </p>
               {filtersActive(filters) && (
-                <button
-                  onClick={resetFilters}
-                  className="mt-4 px-4 py-2 rounded-xl bg-brand text-ink font-semibold text-sm"
-                >
+                <Button onClick={resetFilters} size="sm" className="mt-4">
                   Reset filters
-                </button>
+                </Button>
               )}
             </div>
           )
         ) : (
-          <div className="relative" style={{ width: 320, height: 480 }}>
+          <div className="relative" style={{ width: 320, height: 520 }}>
             {candidates.map((candidate, index) => {
               if (index < currentIndex - 1 || index > currentIndex) return null
               const isTop = index === currentIndex
               const photoIdx = cardPhotoIndex.get(candidate.id) ?? 0
-              const photoUrl = candidate.photos[photoIdx] ?? null
-              const imgKey = photoUrl ?? `${candidate.id}:nophoto`
 
               return (
                 <TinderCard
@@ -385,94 +455,20 @@ export default function Discover() {
                   swipeThreshold={80}
                   className="absolute top-0 left-0 w-full h-full"
                 >
-                  <div
-                    className="w-full h-full rounded-3xl overflow-hidden shadow-2xl select-none relative bg-border"
-                    style={{
-                      transform: !isTop ? 'scale(0.93) translateY(-12px)' : undefined,
-                      transition: 'transform 0.2s ease',
+                  <DiscoverCard
+                    candidate={candidate}
+                    isTop={isTop}
+                    swipeDir={isTop ? swipeDir : null}
+                    photoIdx={photoIdx}
+                    loadedImages={loadedImages}
+                    onImageLoad={key => setLoadedImages(prev => new Set(prev).add(key))}
+                    onNavigatePhoto={dir => navigatePhoto(candidate.id, candidate.photos, dir)}
+                    onInfoClick={() => openProfile(candidate)}
+                    onBookLike={book => {
+                      setBookLikeComment('')
+                      setBookLike({ candidate, book })
                     }}
-                  >
-                    {photoUrl ? (
-                      <>
-                        {!loadedImages.has(imgKey) && (
-                          <div className="absolute inset-0 skeleton" />
-                        )}
-                        <img
-                          src={photoUrl}
-                          alt=""
-                          className={`w-full h-full object-cover transition-opacity duration-300 ${loadedImages.has(imgKey) ? 'opacity-100' : 'opacity-0'}`}
-                          draggable={false}
-                          onLoad={() => setLoadedImages(prev => new Set(prev).add(imgKey))}
-                        />
-                        {candidate.photos.length > 1 && (
-                          <div className="absolute top-3 left-0 right-0 flex justify-center gap-1.5 z-10 pointer-events-none">
-                            {candidate.photos.map((_, i) => (
-                              <div
-                                key={i}
-                                className={`h-1 rounded-full transition-all duration-200 ${i === photoIdx ? 'w-5 bg-surface' : 'w-1.5 bg-surface/50'}`}
-                              />
-                            ))}
-                          </div>
-                        )}
-                        {isTop && candidate.photos.length > 1 && (
-                          <>
-                            <div
-                              className="absolute left-0 top-0 w-1/3 h-4/5 z-10"
-                              onClick={() => navigatePhoto(candidate.id, candidate.photos, -1)}
-                            />
-                            <div
-                              className="absolute right-0 top-0 w-1/3 h-4/5 z-10"
-                              onClick={() => navigatePhoto(candidate.id, candidate.photos, 1)}
-                            />
-                          </>
-                        )}
-                      </>
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-brand-subtle">
-                        <span className="text-7xl">📖</span>
-                      </div>
-                    )}
-
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/5 to-transparent pointer-events-none" />
-
-                    {isTop && swipeDir === 'right' && (
-                      <div className="absolute top-8 left-6 border-4 border-success text-success font-black text-3xl px-3 py-1 rounded-xl -rotate-12 pointer-events-none">
-                        LIKE
-                      </div>
-                    )}
-                    {isTop && swipeDir === 'left' && (
-                      <div className="absolute top-8 right-6 border-4 border-destructive text-destructive font-black text-3xl px-3 py-1 rounded-xl rotate-12 pointer-events-none">
-                        NOPE
-                      </div>
-                    )}
-
-                    <div className="absolute bottom-0 left-0 right-0 p-5 z-20">
-                      <div className="flex items-end justify-between">
-                        <p className="text-xl font-bold text-white leading-snug pointer-events-none">
-                          {candidate.name ?? 'Reader'}
-                          {candidate.birth_date ? `, ${getAge(candidate.birth_date)}` : ''}
-                        </p>
-                        <div className="flex items-center gap-2 shrink-0">
-                          {candidate.score > 0 && (
-                            <span className="bg-brand text-ink text-xs font-bold px-2.5 py-1 rounded-full pointer-events-none">
-                              📚 {candidate.score}
-                            </span>
-                          )}
-                          {isTop && (
-                            <button
-                              onClick={e => { e.stopPropagation(); openProfile(candidate) }}
-                              className="w-9 h-9 rounded-full bg-surface/25 backdrop-blur-sm flex items-center justify-center text-white hover:bg-surface/40 transition-colors"
-                              aria-label="View profile"
-                            >
-                              <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
-                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
-                              </svg>
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  />
                 </TinderCard>
               )
             })}
@@ -517,12 +513,9 @@ export default function Discover() {
             <p className="text-muted text-sm mt-2 mb-6">
               You and {matchName} both liked each other.
             </p>
-            <button
-              onClick={() => setMatchName(null)}
-              className="w-full py-3 rounded-xl bg-brand hover:bg-brand-hover text-ink font-semibold transition-colors"
-            >
+            <Button onClick={() => setMatchName(null)} fullWidth>
               Keep swiping
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -583,10 +576,13 @@ export default function Discover() {
             {/* Info */}
             <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
               <div>
-                <h2 className="text-2xl font-bold text-ink">
-                  {profileModal.candidate.name ?? 'Reader'}
-                  {profileModal.candidate.birth_date ? `, ${getAge(profileModal.candidate.birth_date)}` : ''}
-                </h2>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h2 className="text-display text-2xl">
+                    {profileModal.candidate.name ?? 'Reader'}
+                    {profileModal.candidate.birth_date ? `, ${getAge(profileModal.candidate.birth_date)}` : ''}
+                  </h2>
+                  {profileModal.candidate.identity_verified && <VerifiedBadge size="md" />}
+                </div>
                 {profileModal.candidate.gender && (
                   <p className="text-muted text-sm capitalize mt-0.5">{profileModal.candidate.gender}</p>
                 )}
@@ -642,6 +638,18 @@ export default function Discover() {
       )}
 
       <BookDetailModal book={detailBook} onClose={() => setDetailBook(null)} />
+
+      {bookLike && (
+        <BookLikeSheet
+          candidate={bookLike.candidate}
+          book={bookLike.book}
+          comment={bookLikeComment}
+          sending={bookLikeSending}
+          onCommentChange={setBookLikeComment}
+          onClose={() => { setBookLike(null); setBookLikeComment('') }}
+          onSubmit={submitBookLike}
+        />
+      )}
 
       {/* Filter sheet */}
       {showFilters && (

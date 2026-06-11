@@ -6,6 +6,7 @@ import { useProfileStore } from '../store/profile'
 import { supabase } from '../lib/supabase'
 // SPOTIFY STANDBY: import { generateCodeVerifier, getAuthUrl, getSavedAudiobooks, refreshAccessToken } from '../lib/spotify'
 import BottomNav from '../components/BottomNav'
+import VerifiedBadge from '../components/VerifiedBadge'
 import { Button } from '../components/ui'
 
 function getAge(birthDate: string): number {
@@ -134,10 +135,13 @@ export default function Profile() {
               📖
             </div>
           )}
-          <p className="mt-4 text-2xl font-bold text-ink">
-            {profile?.name ?? 'Reader'}
-            {age !== null ? `, ${age}` : ''}
-          </p>
+          <div className="mt-4 flex items-center gap-2 flex-wrap justify-center">
+            <p className="text-display text-2xl">
+              {profile?.name ?? 'Reader'}
+              {age !== null ? `, ${age}` : ''}
+            </p>
+            {profile?.identity_verified && <VerifiedBadge size="md" />}
+          </div>
           {profile?.gender && (
             <p className="text-muted text-sm mt-1 capitalize">{profile.gender}</p>
           )}
