@@ -102,27 +102,27 @@ function DualRangeSlider({ min, max, low, high, onChange }: {
         onPointerMove={onPointerMove}
         onPointerUp={() => { dragging.current = null }}
       >
-        <div className="absolute left-0 right-0 h-1.5 bg-stone-200 rounded-full" />
+        <div className="absolute left-0 right-0 h-1.5 bg-border rounded-full" />
         <div
-          className="absolute h-1.5 bg-amber-400 rounded-full"
+          className="absolute h-1.5 bg-brand rounded-full"
           style={{ left: `${lowPct}%`, right: `${100 - highPct}%` }}
         />
         <div
-          className="absolute w-6 h-6 bg-white rounded-full border-2 border-amber-400 shadow"
+          className="absolute w-6 h-6 bg-surface rounded-full border-2 border-brand shadow"
           style={{ left: `${lowPct}%`, transform: 'translateX(-50%)' }}
         />
         <div
-          className="absolute w-6 h-6 bg-white rounded-full border-2 border-amber-400 shadow"
+          className="absolute w-6 h-6 bg-surface rounded-full border-2 border-brand shadow"
           style={{ left: `${highPct}%`, transform: 'translateX(-50%)' }}
         />
       </div>
       <div className="relative h-4">
         <span
-          className="absolute text-xs font-medium text-stone-600 -translate-x-1/2"
+          className="absolute text-xs font-medium text-ink-secondary -translate-x-1/2"
           style={{ left: `${lowPct}%` }}
         >{low}</span>
         <span
-          className="absolute text-xs font-medium text-stone-600 -translate-x-1/2"
+          className="absolute text-xs font-medium text-ink-secondary -translate-x-1/2"
           style={{ left: `${highPct}%` }}
         >{high}</span>
       </div>
@@ -281,10 +281,10 @@ export default function Discover() {
 
   if (loading) {
     return (
-      <div className="h-screen bg-stone-100 flex flex-col overflow-hidden">
+      <div className="h-screen bg-canvas flex flex-col overflow-hidden">
         <div className="px-6 safe-top pb-3 flex-shrink-0 flex items-center justify-between">
           <div className="w-8" />
-          <h1 className="text-2xl font-bold text-stone-900">Chapter</h1>
+          <h1 className="text-display text-2xl">Chapter</h1>
           <div className="w-8" />
         </div>
         <div className="flex-1 flex items-center justify-center overflow-hidden">
@@ -302,15 +302,15 @@ export default function Discover() {
   const isEmpty = candidates.length === 0 || currentIndex < 0
 
   return (
-    <div className="h-screen bg-stone-100 flex flex-col overflow-hidden">
+    <div className="h-screen bg-canvas flex flex-col overflow-hidden">
 
       {/* Header */}
       <div className="px-6 safe-top pb-3 flex-shrink-0 flex items-center justify-between">
         <div className="w-8" />
-        <h1 className="text-2xl font-bold text-stone-900">Chapter</h1>
+        <h1 className="text-display text-2xl">Chapter</h1>
         <button
           onClick={() => { setDraft(filters); setShowFilters(true) }}
-          className="relative w-8 h-8 flex items-center justify-center text-stone-400 hover:text-stone-700 transition-colors"
+          className="relative w-8 h-8 flex items-center justify-center text-subtle hover:text-ink-secondary transition-colors"
           aria-label="Filters"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
@@ -319,7 +319,7 @@ export default function Discover() {
             <line x1="11" y1="18" x2="13" y2="18" />
           </svg>
           {filtersActive(filters) && (
-            <span className="absolute top-0 right-0 w-2 h-2 rounded-full bg-amber-400" />
+            <span className="absolute top-0 right-0 w-2 h-2 rounded-full bg-brand" />
           )}
         </button>
       </div>
@@ -329,11 +329,11 @@ export default function Discover() {
         {isEmpty ? (
           fetchError ? (
             <div className="text-center px-8">
-              <h2 className="text-xl font-bold text-stone-900">Something went wrong</h2>
-              <p className="text-stone-500 text-sm mt-2">Couldn't load profiles. Check your connection.</p>
+              <h2 className="text-xl font-bold text-ink">Something went wrong</h2>
+              <p className="text-muted text-sm mt-2">Couldn't load profiles. Check your connection.</p>
               <button
                 onClick={loadCandidates}
-                className="mt-5 px-5 py-2.5 rounded-xl bg-amber-400 text-stone-900 font-semibold text-sm"
+                className="mt-5 px-5 py-2.5 rounded-xl bg-brand text-ink font-semibold text-sm"
               >
                 Try again
               </button>
@@ -341,10 +341,10 @@ export default function Discover() {
           ) : (
             <div className="text-center px-8">
               <p className="text-5xl mb-4">📚</p>
-              <h2 className="text-xl font-bold text-stone-900">
+              <h2 className="text-xl font-bold text-ink">
                 {filtersActive(filters) ? 'No matches for these filters' : 'All caught up'}
               </h2>
-              <p className="text-stone-500 text-sm mt-2">
+              <p className="text-muted text-sm mt-2">
                 {filtersActive(filters)
                   ? 'Try widening your filters to see more readers.'
                   : "You've seen everyone. Check back as more readers join."}
@@ -352,7 +352,7 @@ export default function Discover() {
               {filtersActive(filters) && (
                 <button
                   onClick={resetFilters}
-                  className="mt-4 px-4 py-2 rounded-xl bg-amber-400 text-stone-900 font-semibold text-sm"
+                  className="mt-4 px-4 py-2 rounded-xl bg-brand text-ink font-semibold text-sm"
                 >
                   Reset filters
                 </button>
@@ -386,7 +386,7 @@ export default function Discover() {
                   className="absolute top-0 left-0 w-full h-full"
                 >
                   <div
-                    className="w-full h-full rounded-3xl overflow-hidden shadow-2xl select-none relative bg-stone-200"
+                    className="w-full h-full rounded-3xl overflow-hidden shadow-2xl select-none relative bg-border"
                     style={{
                       transform: !isTop ? 'scale(0.93) translateY(-12px)' : undefined,
                       transition: 'transform 0.2s ease',
@@ -409,7 +409,7 @@ export default function Discover() {
                             {candidate.photos.map((_, i) => (
                               <div
                                 key={i}
-                                className={`h-1 rounded-full transition-all duration-200 ${i === photoIdx ? 'w-5 bg-white' : 'w-1.5 bg-white/50'}`}
+                                className={`h-1 rounded-full transition-all duration-200 ${i === photoIdx ? 'w-5 bg-surface' : 'w-1.5 bg-surface/50'}`}
                               />
                             ))}
                           </div>
@@ -428,7 +428,7 @@ export default function Discover() {
                         )}
                       </>
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-amber-50">
+                      <div className="w-full h-full flex items-center justify-center bg-brand-subtle">
                         <span className="text-7xl">📖</span>
                       </div>
                     )}
@@ -436,12 +436,12 @@ export default function Discover() {
                     <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/5 to-transparent pointer-events-none" />
 
                     {isTop && swipeDir === 'right' && (
-                      <div className="absolute top-8 left-6 border-4 border-green-400 text-green-400 font-black text-3xl px-3 py-1 rounded-xl -rotate-12 pointer-events-none">
+                      <div className="absolute top-8 left-6 border-4 border-success text-success font-black text-3xl px-3 py-1 rounded-xl -rotate-12 pointer-events-none">
                         LIKE
                       </div>
                     )}
                     {isTop && swipeDir === 'left' && (
-                      <div className="absolute top-8 right-6 border-4 border-red-400 text-red-400 font-black text-3xl px-3 py-1 rounded-xl rotate-12 pointer-events-none">
+                      <div className="absolute top-8 right-6 border-4 border-destructive text-destructive font-black text-3xl px-3 py-1 rounded-xl rotate-12 pointer-events-none">
                         NOPE
                       </div>
                     )}
@@ -454,14 +454,14 @@ export default function Discover() {
                         </p>
                         <div className="flex items-center gap-2 shrink-0">
                           {candidate.score > 0 && (
-                            <span className="bg-amber-400 text-stone-900 text-xs font-bold px-2.5 py-1 rounded-full pointer-events-none">
+                            <span className="bg-brand text-ink text-xs font-bold px-2.5 py-1 rounded-full pointer-events-none">
                               📚 {candidate.score}
                             </span>
                           )}
                           {isTop && (
                             <button
                               onClick={e => { e.stopPropagation(); openProfile(candidate) }}
-                              className="w-9 h-9 rounded-full bg-white/25 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/40 transition-colors"
+                              className="w-9 h-9 rounded-full bg-surface/25 backdrop-blur-sm flex items-center justify-center text-white hover:bg-surface/40 transition-colors"
                               aria-label="View profile"
                             >
                               <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
@@ -485,7 +485,7 @@ export default function Discover() {
         <button
           onClick={() => triggerSwipe('left')}
           disabled={isEmpty}
-          className="w-16 h-16 rounded-full bg-white shadow-lg flex items-center justify-center text-2xl hover:scale-110 active:scale-95 transition-transform disabled:opacity-30 disabled:pointer-events-none"
+          className="w-16 h-16 rounded-full bg-surface shadow-lg flex items-center justify-center text-2xl hover:scale-110 active:scale-95 transition-transform disabled:opacity-30 disabled:pointer-events-none"
           aria-label="Pass"
         >
           ✕
@@ -493,7 +493,7 @@ export default function Discover() {
         <button
           onClick={() => triggerSwipe('right')}
           disabled={isEmpty}
-          className="w-16 h-16 rounded-full bg-white shadow-lg flex items-center justify-center text-2xl hover:scale-110 active:scale-95 transition-transform disabled:opacity-30 disabled:pointer-events-none"
+          className="w-16 h-16 rounded-full bg-surface shadow-lg flex items-center justify-center text-2xl hover:scale-110 active:scale-95 transition-transform disabled:opacity-30 disabled:pointer-events-none"
           aria-label="Like"
         >
           ❤️
@@ -509,17 +509,17 @@ export default function Discover() {
           onClick={() => setMatchName(null)}
         >
           <div
-            className="bg-white rounded-3xl p-8 text-center max-w-xs w-full shadow-2xl"
+            className="bg-surface rounded-3xl p-8 text-center max-w-xs w-full shadow-2xl"
             onClick={e => e.stopPropagation()}
           >
             <p className="text-5xl mb-4">🎉</p>
-            <h2 className="text-2xl font-bold text-stone-900">It's a match!</h2>
-            <p className="text-stone-500 text-sm mt-2 mb-6">
+            <h2 className="text-2xl font-bold text-ink">It's a match!</h2>
+            <p className="text-muted text-sm mt-2 mb-6">
               You and {matchName} both liked each other.
             </p>
             <button
               onClick={() => setMatchName(null)}
-              className="w-full py-3 rounded-xl bg-amber-400 hover:bg-amber-500 text-stone-900 font-semibold transition-colors"
+              className="w-full py-3 rounded-xl bg-brand hover:bg-brand-hover text-ink font-semibold transition-colors"
             >
               Keep swiping
             </button>
@@ -534,7 +534,7 @@ export default function Discover() {
           onClick={() => setProfileModal(null)}
         >
           <div
-            className="w-full bg-white rounded-t-3xl overflow-hidden flex flex-col"
+            className="w-full bg-surface rounded-t-3xl overflow-hidden flex flex-col"
             style={{ maxHeight: '90vh' }}
             onClick={e => e.stopPropagation()}
           >
@@ -553,7 +553,7 @@ export default function Discover() {
                         {profileModal.candidate.photos.map((_, i) => (
                           <div
                             key={i}
-                            className={`h-1 rounded-full transition-all duration-200 ${i === profileModal.photoIndex ? 'w-5 bg-white' : 'w-1.5 bg-white/50'}`}
+                            className={`h-1 rounded-full transition-all duration-200 ${i === profileModal.photoIndex ? 'w-5 bg-surface' : 'w-1.5 bg-surface/50'}`}
                           />
                         ))}
                       </div>
@@ -569,7 +569,7 @@ export default function Discover() {
                   )}
                 </>
               ) : (
-                <div className="w-full h-full bg-amber-50 flex items-center justify-center">
+                <div className="w-full h-full bg-brand-subtle flex items-center justify-center">
                   <span className="text-7xl">📖</span>
                 </div>
               )}
@@ -583,50 +583,50 @@ export default function Discover() {
             {/* Info */}
             <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
               <div>
-                <h2 className="text-2xl font-bold text-stone-900">
+                <h2 className="text-2xl font-bold text-ink">
                   {profileModal.candidate.name ?? 'Reader'}
                   {profileModal.candidate.birth_date ? `, ${getAge(profileModal.candidate.birth_date)}` : ''}
                 </h2>
                 {profileModal.candidate.gender && (
-                  <p className="text-stone-500 text-sm capitalize mt-0.5">{profileModal.candidate.gender}</p>
+                  <p className="text-muted text-sm capitalize mt-0.5">{profileModal.candidate.gender}</p>
                 )}
               </div>
 
               {profileModal.candidate.bio && (
-                <p className="text-stone-700 text-sm leading-relaxed">{profileModal.candidate.bio}</p>
+                <p className="text-ink-secondary text-sm leading-relaxed">{profileModal.candidate.bio}</p>
               )}
 
               {profileModal.loadingExtra ? (
                 <div className="flex justify-center py-4">
-                  <div className="w-5 h-5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+                  <div className="w-5 h-5 border-2 border-brand border-t-transparent rounded-full animate-spin" />
                 </div>
               ) : (
                 <>
                   {profileModal.genres.length > 0 && (
                     <div>
-                      <p className="text-xs font-semibold text-stone-400 uppercase tracking-wide mb-2">Genres</p>
+                      <p className="text-xs font-semibold text-subtle uppercase tracking-wide mb-2">Genres</p>
                       <div className="flex flex-wrap gap-2">
                         {profileModal.genres.map(g => (
-                          <span key={g} className="px-3 py-1 bg-amber-50 text-amber-800 rounded-full text-sm font-medium">{g}</span>
+                          <span key={g} className="px-3 py-1 bg-brand-subtle text-brand-ink rounded-full text-sm font-medium">{g}</span>
                         ))}
                       </div>
                     </div>
                   )}
                   {profileModal.books.length > 0 && (
                     <div>
-                      <p className="text-xs font-semibold text-stone-400 uppercase tracking-wide mb-2">Favourite books</p>
+                      <p className="text-xs font-semibold text-subtle uppercase tracking-wide mb-2">Favourite books</p>
                       <div className="space-y-2">
                         {profileModal.books.map((b, i) => (
                           <button key={i} className="flex items-center gap-3 text-left w-full" onClick={() => setDetailBook(b)}>
                             {b.cover_url ? (
                               <img src={b.cover_url} alt="" className="w-10 h-14 object-cover rounded shadow flex-shrink-0" />
                             ) : (
-                              <div className="w-10 h-14 bg-stone-100 rounded shadow flex items-center justify-center text-lg flex-shrink-0">📖</div>
+                              <div className="w-10 h-14 bg-canvas rounded shadow flex items-center justify-center text-lg flex-shrink-0">📖</div>
                             )}
                             <div className="min-w-0">
-                              <p className="text-sm font-medium text-stone-900">{b.title}</p>
-                              <p className="text-xs text-stone-500">{b.author}</p>
-                              {b.rating && <p className="text-xs text-amber-400">{'★'.repeat(b.rating)}{'☆'.repeat(5 - b.rating)}</p>}
+                              <p className="text-sm font-medium text-ink">{b.title}</p>
+                              <p className="text-xs text-muted">{b.author}</p>
+                              {b.rating && <p className="text-xs text-brand">{'★'.repeat(b.rating)}{'☆'.repeat(5 - b.rating)}</p>}
                             </div>
                           </button>
                         ))}
@@ -650,15 +650,15 @@ export default function Discover() {
           onClick={() => setShowFilters(false)}
         >
           <div
-            className="w-full bg-white rounded-t-3xl px-6 pt-5 pb-10 flex flex-col gap-6"
+            className="w-full bg-surface rounded-t-3xl px-6 pt-5 pb-10 flex flex-col gap-6"
             onClick={e => e.stopPropagation()}
           >
             {/* Sheet header */}
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-stone-900">Filters</h2>
+              <h2 className="text-lg font-bold text-ink">Filters</h2>
               <button
                 onClick={() => setShowFilters(false)}
-                className="text-stone-400 hover:text-stone-700 text-2xl leading-none"
+                className="text-subtle hover:text-ink-secondary text-2xl leading-none"
                 aria-label="Close"
               >
                 ×
@@ -667,7 +667,7 @@ export default function Discover() {
 
             {/* Age range */}
             <div className="flex flex-col gap-1">
-              <p className="text-sm font-semibold text-stone-700">Age range</p>
+              <p className="text-sm font-semibold text-ink-secondary">Age range</p>
               <DualRangeSlider
                 min={18}
                 max={80}
@@ -679,7 +679,7 @@ export default function Discover() {
 
             {/* Gender */}
             <div className="flex flex-col gap-3">
-              <p className="text-sm font-semibold text-stone-700">Show me</p>
+              <p className="text-sm font-semibold text-ink-secondary">Show me</p>
               <div className="flex flex-wrap gap-2">
                 {GENDER_OPTIONS.map(g => {
                   const active = draft.genders.includes(g)
@@ -689,8 +689,8 @@ export default function Discover() {
                       onClick={() => toggleGender(g)}
                       className={`px-4 py-2 rounded-full text-sm font-medium border transition-colors capitalize ${
                         active
-                          ? 'bg-amber-400 border-amber-400 text-stone-900'
-                          : 'bg-white border-stone-200 text-stone-600 hover:border-stone-400'
+                          ? 'bg-brand border-brand text-ink'
+                          : 'bg-surface border-border text-ink-secondary hover:border-border-strong'
                       }`}
                     >
                       {g}
@@ -699,7 +699,7 @@ export default function Discover() {
                 })}
               </div>
               {draft.genders.length === 0 && (
-                <p className="text-xs text-stone-400">No gender filter — showing all matches</p>
+                <p className="text-xs text-subtle">No gender filter — showing all matches</p>
               )}
             </div>
 
@@ -707,13 +707,13 @@ export default function Discover() {
             <div className="flex gap-3 pt-1">
               <button
                 onClick={resetFilters}
-                className="flex-1 py-3 rounded-xl border border-stone-200 text-stone-600 font-semibold text-sm hover:bg-stone-50 transition-colors"
+                className="flex-1 py-3 rounded-xl border border-border text-ink-secondary font-semibold text-sm hover:bg-canvas transition-colors"
               >
                 Reset
               </button>
               <button
                 onClick={applyDraft}
-                className="flex-1 py-3 rounded-xl bg-amber-400 hover:bg-amber-500 text-stone-900 font-semibold text-sm transition-colors"
+                className="flex-1 py-3 rounded-xl bg-brand hover:bg-brand-hover text-ink font-semibold text-sm transition-colors"
               >
                 Apply
               </button>

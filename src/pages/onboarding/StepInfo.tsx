@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Button, Chip, Input, Label, OnboardingStepHeader, Textarea } from '../../components/ui'
 import type { OnboardingData } from './index'
 
 interface Props {
@@ -55,95 +56,92 @@ export default function StepInfo({ onNext }: Props) {
 
   return (
     <div className="px-6 pt-6 pb-10">
-      <h2 className="text-2xl font-bold text-stone-900 mb-1">About you</h2>
-      <p className="text-stone-500 text-sm mb-8">Help others get to know you.</p>
+      <OnboardingStepHeader
+        title="About you"
+        description="Help others get to know you."
+      />
 
       <div className="space-y-6">
         <div>
-          <label className="block text-sm font-medium text-stone-700 mb-1.5">Your name</label>
-          <input
+          <Label htmlFor="name">Your name</Label>
+          <Input
+            id="name"
             type="text"
             value={name}
             onChange={e => setName(e.target.value)}
             placeholder="First name"
-            className="w-full px-4 py-3 rounded-xl border border-stone-200 bg-white text-stone-900 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-400"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-stone-700 mb-1.5">Date of birth</label>
-          <input
+          <Label htmlFor="birthDate">Date of birth</Label>
+          <Input
+            id="birthDate"
             type="date"
             value={birthDate}
             onChange={e => { setBirthDate(e.target.value); setAgeError(false) }}
             max={maxBirthDate}
-            className={`w-full px-4 py-3 rounded-xl border bg-white text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-400 ${ageError ? 'border-red-400' : 'border-stone-200'}`}
+            hasError={ageError}
           />
           {ageError && (
-            <p className="text-red-500 text-sm mt-1.5">You need to be 18+ to use the app.</p>
+            <p className="text-destructive text-sm mt-1.5">You need to be 18+ to use the app.</p>
           )}
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-stone-700 mb-2">I am a…</label>
-          <div className="flex gap-2 flex-wrap">
+          <Label>I am a…</Label>
+          <div className="flex gap-2 flex-wrap mt-2">
             {GENDERS.map(g => (
-              <button
+              <Chip
                 key={g.value}
+                selected={gender === g.value}
                 onClick={() => setGender(g.value)}
-                className={`px-4 py-2 rounded-full text-sm font-medium border transition-colors ${
-                  gender === g.value
-                    ? 'bg-amber-400 border-amber-400 text-stone-900'
-                    : 'bg-white border-stone-200 text-stone-700 hover:border-amber-300'
-                }`}
               >
                 {g.label}
-              </button>
+              </Chip>
             ))}
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-stone-700 mb-2">Looking for…</label>
-          <div className="flex gap-2 flex-wrap">
+          <Label>Looking for…</Label>
+          <div className="flex gap-2 flex-wrap mt-2">
             {LOOKING_FOR.map(l => (
-              <button
+              <Chip
                 key={l.value}
+                selected={lookingFor.includes(l.value)}
                 onClick={() => toggleLookingFor(l.value)}
-                className={`px-4 py-2 rounded-full text-sm font-medium border transition-colors ${
-                  lookingFor.includes(l.value)
-                    ? 'bg-amber-400 border-amber-400 text-stone-900'
-                    : 'bg-white border-stone-200 text-stone-700 hover:border-amber-300'
-                }`}
               >
                 {l.label}
-              </button>
+              </Chip>
             ))}
           </div>
         </div>
 
         <div>
           <div className="flex items-baseline justify-between mb-1.5">
-            <label className="text-sm font-medium text-stone-700">About me <span className="text-stone-400 font-normal">(optional)</span></label>
-            <span className="text-xs text-stone-400">{bio.length}/300</span>
+            <Label className="mb-0">
+              About me <span className="text-subtle font-normal">(optional)</span>
+            </Label>
+            <span className="text-xs text-subtle">{bio.length}/300</span>
           </div>
-          <textarea
+          <Textarea
             value={bio}
             onChange={e => setBio(e.target.value.slice(0, 300))}
             placeholder="What are you reading lately? What do you love about books?"
             rows={3}
-            className="w-full px-4 py-3 rounded-xl border border-stone-200 bg-white text-stone-900 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none"
           />
         </div>
       </div>
 
-      <button
+      <Button
         onClick={handleContinue}
         disabled={!canContinue}
-        className="w-full py-3 rounded-xl bg-amber-400 hover:bg-amber-500 text-stone-900 font-semibold transition-colors disabled:opacity-40 mt-10"
+        fullWidth
+        className="mt-10 disabled:opacity-40"
       >
         Continue
-      </button>
+      </Button>
     </div>
   )
 }

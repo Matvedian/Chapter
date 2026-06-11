@@ -16,6 +16,7 @@ import { useProfileStore } from '../store/profile'
 import { supabase } from '../lib/supabase'
 import { searchBooks } from '../lib/bookSearch'
 import type { BookResult } from '../lib/bookSearch'
+import { Button, Chip, Input, Label, Textarea } from '../components/ui'
 
 interface Genre { id: number; name: string }
 interface BookItem { source: string; external_id: string; title: string; author: string; cover_url: string | null }
@@ -51,21 +52,21 @@ function SortablePhoto({
     zIndex: isDragging ? 50 : undefined,
   }
   return (
-    <div ref={setNodeRef} style={style} className="relative aspect-square rounded-2xl overflow-hidden bg-stone-200 touch-none">
+    <div ref={setNodeRef} style={style} className="relative aspect-square rounded-2xl overflow-hidden bg-border touch-none">
       <img
         src={url} alt=""
         className="w-full h-full object-cover cursor-grab active:cursor-grabbing"
         {...attributes} {...listeners}
       />
       {index === 0 ? (
-        <span className="absolute bottom-1.5 left-1.5 text-[10px] font-semibold bg-amber-400 text-stone-900 px-1.5 py-0.5 rounded-full leading-none">
+        <span className="absolute bottom-1.5 left-1.5 text-[10px] font-semibold bg-brand text-ink px-1.5 py-0.5 rounded-full leading-none">
           Profile
         </span>
       ) : (
         <button
           onPointerDown={e => e.stopPropagation()}
           onClick={onSetMain}
-          className="absolute bottom-1.5 left-1.5 w-6 h-6 rounded-full bg-stone-900/60 text-amber-400 text-xs flex items-center justify-center"
+          className="absolute bottom-1.5 left-1.5 w-6 h-6 rounded-full bg-ink/60 text-brand text-xs flex items-center justify-center"
           aria-label="Set as profile photo"
         >
           ★
@@ -74,7 +75,7 @@ function SortablePhoto({
       <button
         onPointerDown={e => e.stopPropagation()}
         onClick={onRemove}
-        className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-stone-900/60 text-white text-xs flex items-center justify-center"
+        className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-ink/60 text-white text-xs flex items-center justify-center"
         aria-label="Remove photo"
       >
         ×
@@ -323,25 +324,25 @@ export default function ProfileEdit() {
   if (!profile || !user) return null
 
   return (
-    <div className="h-screen bg-stone-50 flex flex-col overflow-hidden">
+    <div className="h-screen bg-canvas flex flex-col overflow-hidden">
 
       {/* Header */}
-      <div className="flex-shrink-0 bg-white border-b border-stone-200 px-4 safe-top pb-3 flex items-center gap-3">
+      <div className="flex-shrink-0 bg-surface border-b border-border px-4 safe-top pb-3 flex items-center gap-3">
         <button
           onClick={() => navigate('/profile')}
-          className="text-3xl text-stone-500 hover:text-stone-900 transition-colors p-1 -ml-1"
+          className="text-3xl text-muted hover:text-ink transition-colors p-1 -ml-1"
           aria-label="Back"
         >
           ‹
         </button>
-        <p className="font-semibold text-stone-900 flex-1">Edit profile</p>
+        <p className="font-semibold text-ink flex-1">Edit profile</p>
       </div>
 
       <div className="flex-1 overflow-y-auto">
 
         {/* ── Photos ── */}
-        <section className="bg-white border-b border-stone-100 px-6 py-6">
-          <h2 className="text-base font-semibold text-stone-900 mb-4">Photos</h2>
+        <section className="bg-surface border-b border-border px-6 py-6">
+          <h2 className="text-base font-semibold text-ink mb-4">Photos</h2>
           <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={photos} strategy={rectSortingStrategy}>
               <div className="grid grid-cols-3 gap-3 mb-4">
@@ -359,7 +360,7 @@ export default function ProfileEdit() {
                     key={`empty-${i}`}
                     onClick={() => photoInputRef.current?.click()}
                     disabled={photoUploading}
-                    className="aspect-square rounded-2xl border-2 border-dashed border-stone-300 flex items-center justify-center text-stone-400 hover:border-amber-400 hover:text-amber-500 transition-colors disabled:opacity-40"
+                    className="aspect-square rounded-2xl border-2 border-dashed border-border-strong flex items-center justify-center text-subtle hover:border-brand hover:text-brand-ink transition-colors disabled:opacity-40"
                   >
                     <span className="text-2xl">+</span>
                   </button>
@@ -375,139 +376,106 @@ export default function ProfileEdit() {
             className="hidden"
             onChange={e => { handlePhotoUpload(e.target.files); e.target.value = '' }}
           />
-          {photosFeedback === 'error' && <p className="text-xs text-red-500 mb-2">Failed to save photos.</p>}
-          {photosFeedback === 'saved' && <p className="text-xs text-green-600 mb-2">Saved.</p>}
-          <button
+          {photosFeedback === 'error' && <p className="text-xs text-destructive mb-2">Failed to save photos.</p>}
+          {photosFeedback === 'saved' && <p className="text-xs text-success mb-2">Saved.</p>}
+          <Button
             onClick={savePhotos}
             disabled={!photosDirty || photosSaving || photoUploading || photos.length === 0}
-            className="w-full py-2.5 rounded-xl bg-amber-400 hover:bg-amber-500 text-stone-900 font-semibold text-sm transition-colors disabled:opacity-40"
+            fullWidth
+            size="sm"
           >
             {photosSaving ? 'Saving…' : 'Save photos'}
-          </button>
+          </Button>
         </section>
 
         {/* ── Info ── */}
-        <section className="bg-white border-b border-stone-100 px-6 py-6 space-y-5">
-          <h2 className="text-base font-semibold text-stone-900">About you</h2>
+        <section className="bg-surface border-b border-border px-6 py-6 space-y-5">
+          <h2 className="text-base font-semibold text-ink">About you</h2>
 
           <div>
-            <label className="block text-sm font-medium text-stone-700 mb-1.5">Name</label>
-            <input
-              type="text"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-stone-200 bg-stone-50 text-stone-900 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-400"
-            />
+            <Label htmlFor="edit-name">Name</Label>
+            <Input id="edit-name" type="text" value={name} onChange={e => setName(e.target.value)} />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-stone-700 mb-1.5">Date of birth</label>
-            <input
-              type="date"
-              value={birthDate}
-              onChange={e => setBirthDate(e.target.value)}
-              max={maxBirthDate}
-              className="w-full px-4 py-3 rounded-xl border border-stone-200 bg-stone-50 text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-400"
-            />
+            <Label htmlFor="edit-birth">Date of birth</Label>
+            <Input id="edit-birth" type="date" value={birthDate} onChange={e => setBirthDate(e.target.value)} max={maxBirthDate} />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-stone-700 mb-2">I am a…</label>
-            <div className="flex gap-2 flex-wrap">
+            <Label>I am a…</Label>
+            <div className="flex gap-2 flex-wrap mt-2">
               {GENDERS.map(g => (
-                <button
-                  key={g.value}
-                  onClick={() => setGender(g.value)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium border transition-colors ${
-                    gender === g.value
-                      ? 'bg-amber-400 border-amber-400 text-stone-900'
-                      : 'bg-white border-stone-200 text-stone-700 hover:border-amber-300'
-                  }`}
-                >
+                <Chip key={g.value} selected={gender === g.value} onClick={() => setGender(g.value)}>
                   {g.label}
-                </button>
+                </Chip>
               ))}
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-stone-700 mb-2">Looking for…</label>
-            <div className="flex gap-2 flex-wrap">
+            <Label>Looking for…</Label>
+            <div className="flex gap-2 flex-wrap mt-2">
               {LOOKING_FOR.map(l => (
-                <button
-                  key={l.value}
-                  onClick={() => toggleLookingFor(l.value)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium border transition-colors ${
-                    lookingFor.includes(l.value)
-                      ? 'bg-amber-400 border-amber-400 text-stone-900'
-                      : 'bg-white border-stone-200 text-stone-700 hover:border-amber-300'
-                  }`}
-                >
+                <Chip key={l.value} selected={lookingFor.includes(l.value)} onClick={() => toggleLookingFor(l.value)}>
                   {l.label}
-                </button>
+                </Chip>
               ))}
             </div>
           </div>
 
           <div>
             <div className="flex items-baseline justify-between mb-1.5">
-              <label className="text-sm font-medium text-stone-700">About me <span className="text-stone-400 font-normal">(optional)</span></label>
-              <span className="text-xs text-stone-400">{bio.length}/300</span>
+              <Label className="mb-0">About me <span className="text-subtle font-normal">(optional)</span></Label>
+              <span className="text-xs text-subtle">{bio.length}/300</span>
             </div>
-            <textarea
+            <Textarea
               value={bio}
               onChange={e => setBio(e.target.value.slice(0, 300))}
               placeholder="What are you reading lately? What do you love about books?"
               rows={3}
-              className="w-full px-4 py-3 rounded-xl border border-stone-200 bg-stone-50 text-stone-900 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none"
             />
           </div>
 
-          {infoFeedback === 'error' && <p className="text-xs text-red-500">Failed to save.</p>}
-          {infoFeedback === 'saved' && <p className="text-xs text-green-600">Saved.</p>}
-          <button
+          {infoFeedback === 'error' && <p className="text-xs text-destructive">Failed to save.</p>}
+          {infoFeedback === 'saved' && <p className="text-xs text-success">Saved.</p>}
+          <Button
             onClick={saveInfo}
             disabled={!infoDirty || infoSaving || !name.trim() || !birthDate || !gender || lookingFor.length === 0}
-            className="w-full py-2.5 rounded-xl bg-amber-400 hover:bg-amber-500 text-stone-900 font-semibold text-sm transition-colors disabled:opacity-40"
+            fullWidth
+            size="sm"
           >
             {infoSaving ? 'Saving…' : 'Save info'}
-          </button>
+          </Button>
         </section>
 
         {/* ── Genres ── */}
-        <section className="bg-white border-b border-stone-100 px-6 py-6">
-          <h2 className="text-base font-semibold text-stone-900 mb-1">Genres</h2>
-          <p className="text-stone-500 text-xs mb-4">Pick at least 3.</p>
+        <section className="bg-surface border-b border-border px-6 py-6">
+          <h2 className="text-base font-semibold text-ink mb-1">Genres</h2>
+          <p className="text-muted text-xs mb-4">Pick at least 3.</p>
           <div className="flex flex-wrap gap-2 mb-4">
             {allGenres.map(g => (
-              <button
-                key={g.id}
-                onClick={() => toggleGenre(g.id)}
-                className={`px-4 py-2 rounded-full text-sm font-medium border transition-colors ${
-                  selectedGenres.includes(g.id)
-                    ? 'bg-amber-400 border-amber-400 text-stone-900'
-                    : 'bg-white border-stone-200 text-stone-700 hover:border-amber-300'
-                }`}
-              >
+              <Chip key={g.id} selected={selectedGenres.includes(g.id)} onClick={() => toggleGenre(g.id)}>
                 {g.name}
-              </button>
+              </Chip>
             ))}
           </div>
-          {genresFeedback === 'error' && <p className="text-xs text-red-500 mb-2">Failed to save.</p>}
-          {genresFeedback === 'saved' && <p className="text-xs text-green-600 mb-2">Saved.</p>}
-          <button
+          {genresFeedback === 'error' && <p className="text-xs text-destructive mb-2">Failed to save.</p>}
+          {genresFeedback === 'saved' && <p className="text-xs text-success mb-2">Saved.</p>}
+          <Button
             onClick={saveGenres}
             disabled={!genresDirty || genresSaving || selectedGenres.length < 3}
-            className="w-full py-2.5 rounded-xl bg-amber-400 hover:bg-amber-500 text-stone-900 font-semibold text-sm transition-colors disabled:opacity-40"
+            fullWidth
+            size="sm"
           >
             {genresSaving ? 'Saving…' : 'Save genres'}
-          </button>
+          </Button>
         </section>
 
         {/* ── Books ── */}
-        <section className="bg-white px-6 py-6 pb-12">
-          <h2 className="text-base font-semibold text-stone-900 mb-1">Favourite books</h2>
-          <p className="text-stone-500 text-xs mb-4">At least 1 required.</p>
+        <section className="bg-surface px-6 py-6 pb-12">
+          <h2 className="text-base font-semibold text-ink mb-1">Favourite books</h2>
+          <p className="text-muted text-xs mb-4">At least 1 required.</p>
 
           {selectedBooks.length > 0 && (
             <div className="flex gap-3 overflow-x-auto pb-3 mb-4 -mx-6 px-6">
@@ -517,29 +485,29 @@ export default function ProfileEdit() {
                     {book.cover_url ? (
                       <img src={book.cover_url} alt={book.title} className="w-16 h-24 object-cover rounded-lg shadow" />
                     ) : (
-                      <div className="w-16 h-24 rounded-lg bg-amber-100 flex items-center justify-center text-amber-700 text-xs font-medium text-center px-1 shadow">
+                      <div className="w-16 h-24 rounded-lg bg-brand-subtle flex items-center justify-center text-brand-ink text-xs font-medium text-center px-1 shadow">
                         {book.title.slice(0, 20)}
                       </div>
                     )}
                   </button>
                   <button
                     onClick={() => setSelectedBooks(prev => prev.filter(b => b.external_id !== book.external_id))}
-                    className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-stone-800 text-white text-xs flex items-center justify-center"
+                    className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-ink text-white text-xs flex items-center justify-center"
                   >×</button>
                 </div>
               ))}
             </div>
           )}
 
-          <input
+          <Input
             type="search"
             value={bookQuery}
             onChange={e => setBookQuery(e.target.value)}
             placeholder="Search to add books…"
-            className="w-full px-4 py-3 rounded-xl border border-stone-200 bg-stone-50 text-stone-900 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-400 mb-3"
+            className="mb-3"
           />
 
-          {bookSearching && <p className="text-sm text-stone-400 text-center py-3">Searching…</p>}
+          {bookSearching && <p className="text-sm text-subtle text-center py-3">Searching…</p>}
 
           {!bookSearching && bookResults.length > 0 && (
             <div className="space-y-2 mb-4">
@@ -549,7 +517,7 @@ export default function ProfileEdit() {
                   <div
                     key={book.external_id}
                     className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-colors ${
-                      isSelected ? 'border-amber-400 bg-amber-50' : 'border-stone-200 bg-white'
+                      isSelected ? 'border-brand bg-brand-subtle' : 'border-border bg-surface'
                     }`}
                   >
                     <button
@@ -559,16 +527,16 @@ export default function ProfileEdit() {
                       {book.cover_url ? (
                         <img src={book.cover_url} alt="" className="w-10 h-14 object-cover rounded" />
                       ) : (
-                        <div className="w-10 h-14 rounded bg-stone-100" />
+                        <div className="w-10 h-14 rounded bg-canvas" />
                       )}
                     </button>
                     <button onClick={() => toggleBook(book)} className="flex-1 min-w-0 text-left flex items-center gap-2">
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-stone-900 truncate">{book.title}</p>
-                        {book.author && <p className="text-xs text-stone-500 truncate">{book.author}</p>}
+                        <p className="text-sm font-medium text-ink truncate">{book.title}</p>
+                        {book.author && <p className="text-xs text-muted truncate">{book.author}</p>}
                       </div>
                       {isSelected && (
-                        <div className="flex-shrink-0 w-5 h-5 rounded-full bg-amber-400 flex items-center justify-center text-stone-900 text-xs">✓</div>
+                        <div className="flex-shrink-0 w-5 h-5 rounded-full bg-brand flex items-center justify-center text-ink text-xs">✓</div>
                       )}
                     </button>
                   </div>
@@ -577,15 +545,16 @@ export default function ProfileEdit() {
             </div>
           )}
 
-          {booksFeedback === 'error' && <p className="text-xs text-red-500 mb-2">Failed to save.</p>}
-          {booksFeedback === 'saved' && <p className="text-xs text-green-600 mb-2">Saved.</p>}
-          <button
+          {booksFeedback === 'error' && <p className="text-xs text-destructive mb-2">Failed to save.</p>}
+          {booksFeedback === 'saved' && <p className="text-xs text-success mb-2">Saved.</p>}
+          <Button
             onClick={saveBooks}
             disabled={!booksDirty || booksSaving || selectedBooks.length === 0}
-            className="w-full py-2.5 rounded-xl bg-amber-400 hover:bg-amber-500 text-stone-900 font-semibold text-sm transition-colors disabled:opacity-40"
+            fullWidth
+            size="sm"
           >
             {booksSaving ? 'Saving…' : 'Save books'}
-          </button>
+          </Button>
         </section>
 
       </div>

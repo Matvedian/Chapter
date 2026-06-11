@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
+import { Spinner } from './ui'
 import { useAuthStore } from '../store/auth'
 import { useProfileStore } from '../store/profile'
 
@@ -18,8 +19,8 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 
   if (authLoading || (session && profileLoading)) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-stone-50">
-        <div className="w-8 h-8 border-4 border-amber-400 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen flex items-center justify-center bg-canvas">
+        <Spinner />
       </div>
     )
   }

@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "figma:journey": "node design/figma/generate-journey-fig.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.4",
@@ -24,6 +25,7 @@
     "@react-spring/web": "^10.1.0",
     "@supabase/supabase-js": "^2.106.0",
     "@tailwindcss/vite": "^4.3.0",
+    "lucide-react": "^1.17.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-router-dom": "^7.15.1",
@@ -33,6 +35,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@mongodb-js/zstd": "^7.0.0",
     "@playwright/test": "^1.60.0",
     "@types/node": "^24.12.3",
     "@types/react": "^19.2.14",
@@ -42,6 +45,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.6.0",
+    "openfig-core": "^0.3.7",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.59.2",
     "vite": "^8.0.12"

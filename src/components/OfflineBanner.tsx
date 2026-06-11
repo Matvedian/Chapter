@@ -26,7 +26,7 @@ export default function OfflineBanner() {
   return (
     <div
       className={`fixed top-0 inset-x-0 z-[60] flex items-center justify-center text-sm font-medium text-white ${
-        status === 'offline' ? 'bg-red-500' : 'bg-green-500'
+        status === 'offline' ? 'bg-destructive' : 'bg-success'
       }`}
       style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.375rem)', paddingBottom: '0.375rem' }}
     >

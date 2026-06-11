@@ -102,17 +102,19 @@ export default function Onboarding() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-screen bg-canvas">
       <div className="px-6 safe-top pb-2">
         <div className="flex items-center gap-1.5 mb-1">
-          {STEPS.map((_, i) => (
+          {STEPS.map((label, i) => (
             <div
-              key={i}
-              className={`h-1 flex-1 rounded-full transition-colors duration-300 ${i <= step ? 'bg-amber-400' : 'bg-stone-200'}`}
+              key={label}
+              className={`h-1 flex-1 rounded-full transition-colors duration-300 ${i <= step ? 'bg-brand' : 'bg-border'}`}
             />
           ))}
         </div>
-        <p className="text-xs text-stone-400 text-right">Step {step + 1} of {STEPS.length}</p>
+        <p className="text-xs text-subtle text-right">
+          Step {step + 1} of {STEPS.length} — {STEPS[step]}
+        </p>
       </div>
 
       {step === 0 && <StepInfo onNext={next} />}

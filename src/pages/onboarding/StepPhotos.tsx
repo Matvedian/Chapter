@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { Button, OnboardingStepHeader } from '../../components/ui'
 import { useAuthStore } from '../../store/auth'
 import { supabase } from '../../lib/supabase'
 import type { OnboardingData } from './index'
@@ -46,18 +47,20 @@ export default function StepPhotos({ onNext }: Props) {
 
   return (
     <div className="px-6 pt-6 pb-10">
-      <h2 className="text-2xl font-bold text-stone-900 mb-1">Add your photos</h2>
-      <p className="text-stone-500 text-sm mb-8">Add at least one photo to show who you are.</p>
+      <OnboardingStepHeader
+        title="Add your photos"
+        description="Add at least one photo to show who you are."
+      />
 
       <div className="grid grid-cols-3 gap-3 mb-8">
         {slots.map((_, i) => {
           const url = photos[i]
           return url ? (
-            <div key={i} className="relative aspect-square rounded-2xl overflow-hidden bg-stone-200">
+            <div key={i} className="relative aspect-square rounded-card overflow-hidden bg-border">
               <img src={url} alt="" className="w-full h-full object-cover" />
               <button
                 onClick={() => remove(i)}
-                className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-stone-900/60 text-white text-xs flex items-center justify-center leading-none"
+                className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-ink/60 text-white text-xs flex items-center justify-center leading-none"
               >
                 ×
               </button>
@@ -67,7 +70,7 @@ export default function StepPhotos({ onNext }: Props) {
               key={i}
               onClick={() => inputRef.current?.click()}
               disabled={uploading}
-              className="aspect-square rounded-2xl border-2 border-dashed border-stone-300 flex items-center justify-center text-stone-400 hover:border-amber-400 hover:text-amber-500 transition-colors disabled:opacity-40"
+              className="aspect-square rounded-card border-2 border-dashed border-border-strong flex items-center justify-center text-subtle hover:border-brand hover:text-brand transition-colors disabled:opacity-40"
             >
               <span className="text-2xl leading-none">+</span>
             </button>
@@ -85,20 +88,21 @@ export default function StepPhotos({ onNext }: Props) {
       />
 
       {uploading && (
-        <p className="text-sm text-stone-500 text-center mb-4">Uploading…</p>
+        <p className="text-sm text-muted text-center mb-4">Uploading…</p>
       )}
 
       {error && (
-        <p className="text-sm text-red-500 text-center mb-4">{error}</p>
+        <p className="text-sm text-destructive text-center mb-4">{error}</p>
       )}
 
-      <button
+      <Button
         onClick={() => onNext({ photos })}
         disabled={photos.length === 0 || uploading}
-        className="w-full py-3 rounded-xl bg-amber-400 hover:bg-amber-500 text-stone-900 font-semibold transition-colors disabled:opacity-40"
+        fullWidth
+        className="disabled:opacity-40"
       >
         Continue
-      </button>
+      </Button>
     </div>
   )
 }

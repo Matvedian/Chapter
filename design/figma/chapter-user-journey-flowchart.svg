@@ -1,0 +1,326 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="5200" height="1500" viewBox="0 0 5200 1500" fill="none">
+  <defs>
+    <style>
+      .title { font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif; font-weight: 700; fill: #1c1917; }
+      .heading { font-family: Inter, sans-serif; font-weight: 600; fill: #1c1917; }
+      .body { font-family: Inter, sans-serif; font-weight: 400; fill: #44403c; }
+      .caption { font-family: Inter, sans-serif; font-weight: 500; fill: #78716c; }
+      .label { font-family: Inter, sans-serif; font-weight: 600; fill: #a8a29e; font-size: 11px; letter-spacing: 0.06em; }
+      .node-text { font-family: Inter, sans-serif; font-weight: 600; fill: #1c1917; font-size: 14px; }
+      .node-sub { font-family: Inter, sans-serif; font-weight: 400; fill: #78716c; font-size: 11px; }
+      .arrow { stroke: #a8a29e; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .arrow-brand { stroke: #f59e0b; stroke-width: 2.5; fill: none; marker-end: url(#arrowhead-brand); }
+      .arrow-danger { stroke: #ef4444; stroke-width: 2; fill: none; marker-end: url(#arrowhead-danger); stroke-dasharray: 6 4; }
+    </style>
+    <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 Z" fill="#a8a29e"/>
+    </marker>
+    <marker id="arrowhead-brand" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 Z" fill="#f59e0b"/>
+    </marker>
+    <marker id="arrowhead-danger" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 Z" fill="#ef4444"/>
+    </marker>
+    <filter id="shadow" x="-8%" y="-8%" width="116%" height="116%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#1c1917" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+
+  <rect width="5200" height="1500" fill="#fafaf9"/>
+
+  <!-- Header -->
+  <text x="60" y="52" class="title" font-size="32">Chapter � User Journey Flowchart</text>
+  <text x="60" y="82" class="caption" font-size="15">Horizontal happy path (left ? right) � branches above / below main lane</text>
+  <rect x="60" y="94" width="72" height="4" rx="2" fill="#fbbf24"/>
+
+  <!-- Legend -->
+  <g transform="translate(60, 112)">
+    <rect width="1200" height="48" rx="10" fill="#ffffff" stroke="#e7e5e4" filter="url(#shadow)"/>
+    <rect x="16" y="16" width="14" height="14" rx="3" fill="#fef3c7" stroke="#fbbf24"/>
+    <text x="36" y="27" class="caption" font-size="12">Setup</text>
+    <rect x="100" y="16" width="14" height="14" rx="3" fill="#fbbf24"/>
+    <text x="120" y="27" class="caption" font-size="12">Core loop</text>
+    <rect x="220" y="16" width="14" height="14" rx="3" fill="#1c1917"/>
+    <text x="240" y="27" class="caption" font-size="12">Verify gate</text>
+    <rect x="350" y="16" width="14" height="14" rx="3" fill="#ffffff" stroke="#e7e5e4"/>
+    <text x="370" y="27" class="caption" font-size="12">Ongoing</text>
+    <polygon points="460,23 472,16 484,23 472,30" fill="#fef3c7" stroke="#f59e0b"/>
+    <text x="494" y="27" class="caption" font-size="12">Decision</text>
+    <line x1="580" y1="23" x2="610" y2="23" class="arrow-danger"/>
+    <text x="618" y="27" class="caption" font-size="12">Safety / exit</text>
+  </g>
+
+  <!-- ???????????????????????????????????????????????????????????
+       MAIN HORIZONTAL FLOW  (lane Y ? 420)
+       ??????????????????????????????????????????????????????????? -->
+  <g id="flow" transform="translate(0, 180)">
+
+    <!-- Lane guide -->
+    <line x1="40" y1="420" x2="5040" y2="420" stroke="#e7e5e4" stroke-width="1" stroke-dasharray="8 6"/>
+
+    <!-- 1 START -->
+    <ellipse cx="100" cy="420" rx="56" ry="36" fill="#1c1917"/>
+    <text x="100" y="426" text-anchor="middle" fill="#fafaf9" font-family="Inter,sans-serif" font-weight="600" font-size="13">START</text>
+    <line x1="156" y1="420" x2="188" y2="420" class="arrow"/>
+
+    <!-- 2 Install -->
+    <g transform="translate(188, 372)">
+      <rect width="168" height="96" rx="12" fill="#fef3c7" stroke="#fbbf24" filter="url(#shadow)"/>
+      <text x="84" y="36" text-anchor="middle" class="node-text">Install</text>
+      <text x="84" y="54" text-anchor="middle" class="node-sub">App Store</text>
+      <text x="84" y="70" text-anchor="middle" class="node-sub">Splash</text>
+    </g>
+    <line x1="356" y1="420" x2="388" y2="420" class="arrow"/>
+
+    <!-- 3 Auth -->
+    <g transform="translate(388, 364)">
+      <rect width="180" height="112" rx="12" fill="#fef3c7" stroke="#fbbf24" filter="url(#shadow)"/>
+      <text x="90" y="36" text-anchor="middle" class="node-text">Login / Register</text>
+      <text x="90" y="56" text-anchor="middle" class="node-sub">/login � /register</text>
+      <text x="90" y="72" text-anchor="middle" class="node-sub">Supabase Auth</text>
+    </g>
+    <line x1="568" y1="420" x2="600" y2="420" class="arrow"/>
+
+    <!-- 4 Session? -->
+    <g transform="translate(600, 388)">
+      <polygon points="52,0 104,32 52,64 0,32" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+      <text x="52" y="28" text-anchor="middle" class="node-text" font-size="12">Session</text>
+      <text x="52" y="44" text-anchor="middle" class="node-text" font-size="12">valid?</text>
+    </g>
+    <!-- No loop back up -->
+    <path d="M 652 388 L 652 300 L 478 300 L 478 364" class="arrow" fill="none"/>
+    <text x="560" y="290" class="caption" font-size="11">No</text>
+    <line x1="704" y1="420" x2="736" y2="420" class="arrow"/>
+    <text x="718" y="410" class="caption" font-size="11">Yes</text>
+
+    <!-- 5 Onboarding -->
+    <g transform="translate(736, 352)">
+      <rect width="220" height="136" rx="12" fill="#fef3c7" stroke="#fbbf24" filter="url(#shadow)"/>
+      <text x="110" y="32" text-anchor="middle" class="node-text">Onboarding</text>
+      <text x="110" y="52" text-anchor="middle" class="node-sub">Info ? Photos</text>
+      <text x="110" y="68" text-anchor="middle" class="node-sub">Genres ? Books</text>
+      <text x="110" y="88" text-anchor="middle" class="node-sub">4 steps � progress bar</text>
+      <text x="110" y="108" text-anchor="middle" class="node-sub">onboarding_complete</text>
+    </g>
+    <!-- Under 18 branch down -->
+    <path d="M 846 488 L 846 560 L 110 560 L 110 468" class="arrow-danger" fill="none"/>
+    <g transform="translate(760, 568)">
+      <rect width="172" height="52" rx="10" fill="#fef2f2" stroke="#ef4444"/>
+      <text x="86" y="22" text-anchor="middle" class="node-text" font-size="12" fill="#b91c1c">Under 18</text>
+      <text x="86" y="38" text-anchor="middle" class="node-sub" fill="#b91c1c">Blocked at Info</text>
+    </g>
+    <line x1="956" y1="420" x2="988" y2="420" class="arrow"/>
+
+    <!-- 6 Verify -->
+    <g transform="translate(988, 352)">
+      <rect width="200" height="136" rx="12" fill="#1c1917" filter="url(#shadow)"/>
+      <text x="100" y="32" text-anchor="middle" class="node-text" fill="#fafaf9">Verify</text>
+      <text x="100" y="52" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#a8a29e">Stripe ID</text>
+      <text x="100" y="68" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#a8a29e">chapter://verify</text>
+      <text x="100" y="88" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#a8a29e">Poll verified</text>
+      <text x="100" y="108" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#a8a29e">identity_verified</text>
+    </g>
+    <line x1="1188" y1="420" x2="1220" y2="420" class="arrow-brand"/>
+
+    <!-- 7 Discover -->
+    <g transform="translate(1220, 340)">
+      <rect width="260" height="160" rx="14" fill="#fbbf24" stroke="#f59e0b" stroke-width="2" filter="url(#shadow)"/>
+      <text x="130" y="36" text-anchor="middle" class="node-text">Discover</text>
+      <text x="130" y="56" text-anchor="middle" class="node-sub">Swipe deck � /</text>
+      <text x="130" y="72" text-anchor="middle" class="node-sub">get_candidates score</text>
+      <text x="130" y="88" text-anchor="middle" class="node-sub">books�3 + genres�1</text>
+      <text x="130" y="108" text-anchor="middle" class="node-sub">Filters � profile modal</text>
+      <text x="130" y="128" text-anchor="middle" class="node-sub">Pass re-surface 30d</text>
+    </g>
+
+    <!-- Pass / Like above Discover -->
+    <g transform="translate(1260, 200)">
+      <rect width="88" height="56" rx="10" fill="#ffffff" stroke="#e7e5e4"/>
+      <text x="44" y="26" text-anchor="middle" class="node-text" font-size="12">Pass</text>
+      <text x="44" y="42" text-anchor="middle" class="node-sub">Light haptic</text>
+    </g>
+    <g transform="translate(1368, 200)">
+      <rect width="88" height="56" rx="10" fill="#fef3c7" stroke="#fbbf24"/>
+      <text x="44" y="26" text-anchor="middle" class="node-text" font-size="12">Like</text>
+      <text x="44" y="42" text-anchor="middle" class="node-sub">Med haptic</text>
+    </g>
+    <line x1="1304" y1="256" x2="1304" y2="340" class="arrow"/>
+    <line x1="1412" y1="256" x2="1380" y2="340" class="arrow-brand"/>
+    <!-- Pass loop back -->
+    <path d="M 1260 228 L 1180 228 L 1180 380 L 1220 380" class="arrow" fill="none"/>
+
+    <line x1="1480" y1="420" x2="1512" y2="420" class="arrow-brand"/>
+
+    <!-- 8 Mutual like? -->
+    <g transform="translate(1512, 388)">
+      <polygon points="52,0 104,32 52,64 0,32" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+      <text x="52" y="28" text-anchor="middle" class="node-text" font-size="12">Mutual</text>
+      <text x="52" y="44" text-anchor="middle" class="node-text" font-size="12">like?</text>
+    </g>
+    <path d="M 1564 388 L 1564 260 L 1480 260 L 1480 340" class="arrow" fill="none"/>
+    <text x="1574" y="278" class="caption" font-size="11">No ? deck</text>
+    <line x1="1616" y1="420" x2="1648" y2="420" class="arrow-brand"/>
+    <text x="1628" y="410" class="caption" font-size="11">Yes</text>
+
+    <!-- 9 Match -->
+    <g transform="translate(1648, 372)">
+      <rect width="168" height="96" rx="12" fill="#fbbf24" stroke="#f59e0b" filter="url(#shadow)"/>
+      <text x="84" y="36" text-anchor="middle" class="node-text">Match</text>
+      <text x="84" y="54" text-anchor="middle" class="node-sub">Modal + haptic</text>
+      <text x="84" y="70" text-anchor="middle" class="node-sub">Toast elsewhere</text>
+    </g>
+    <line x1="1816" y1="420" x2="1848" y2="420" class="arrow-brand"/>
+
+    <!-- 10 Chat -->
+    <g transform="translate(1848, 352)">
+      <rect width="200" height="136" rx="12" fill="#fbbf24" stroke="#f59e0b" filter="url(#shadow)"/>
+      <text x="100" y="32" text-anchor="middle" class="node-text">Chat</text>
+      <text x="100" y="52" text-anchor="middle" class="node-sub">/chat/:id</text>
+      <text x="100" y="68" text-anchor="middle" class="node-sub">Realtime � typing</text>
+      <text x="100" y="88" text-anchor="middle" class="node-sub">Enter to send</text>
+    </g>
+    <!-- Safety below chat -->
+    <g transform="translate(1848, 540)">
+      <rect width="64" height="44" rx="8" fill="#fef2f2" stroke="#ef4444"/>
+      <text x="32" y="28" text-anchor="middle" class="node-text" font-size="10" fill="#b91c1c">Report</text>
+    </g>
+    <g transform="translate(1920, 540)">
+      <rect width="64" height="44" rx="8" fill="#fef2f2" stroke="#ef4444"/>
+      <text x="32" y="28" text-anchor="middle" class="node-text" font-size="10" fill="#b91c1c">Block</text>
+    </g>
+    <g transform="translate(1992, 540)">
+      <rect width="64" height="44" rx="8" fill="#fef2f2" stroke="#ef4444"/>
+      <text x="32" y="28" text-anchor="middle" class="node-text" font-size="10" fill="#b91c1c">Unmatch</text>
+    </g>
+    <line x1="1948" y1="488" x2="1948" y2="540" class="arrow-danger"/>
+
+    <line x1="2048" y1="420" x2="2080" y2="420" class="arrow"/>
+
+    <!-- 11 Matches -->
+    <g transform="translate(2080, 372)">
+      <rect width="180" height="96" rx="12" fill="#ffffff" stroke="#e7e5e4" filter="url(#shadow)"/>
+      <text x="90" y="36" text-anchor="middle" class="node-text">Matches</text>
+      <text x="90" y="54" text-anchor="middle" class="node-sub">/matches � search</text>
+      <text x="90" y="70" text-anchor="middle" class="node-sub">Unread badge</text>
+    </g>
+    <line x1="2260" y1="420" x2="2292" y2="420" class="arrow"/>
+
+    <!-- 12 Bottom Nav hub -->
+    <g transform="translate(2292, 348)">
+      <rect width="320" height="144" rx="14" fill="#ffffff" stroke="#e7e5e4" filter="url(#shadow)"/>
+      <text x="160" y="28" text-anchor="middle" class="label">BOTTOM NAV � ONGOING LOOPS</text>
+      <text x="48" y="58" text-anchor="middle" class="node-text" font-size="12">Discover</text>
+      <text x="128" y="58" text-anchor="middle" class="node-text" font-size="12">Matches</text>
+      <text x="208" y="58" text-anchor="middle" class="node-text" font-size="12">Library</text>
+      <text x="288" y="58" text-anchor="middle" class="node-text" font-size="12">Profile</text>
+      <line x1="20" y1="72" x2="300" y2="72" stroke="#e7e5e4"/>
+      <text x="48" y="96" text-anchor="middle" class="node-sub">Swipe deck</text>
+      <text x="128" y="96" text-anchor="middle" class="node-sub">Chat list</text>
+      <text x="208" y="96" text-anchor="middle" class="node-sub">Shelves � ratings</text>
+      <text x="288" y="96" text-anchor="middle" class="node-sub">Edit � pause</text>
+      <text x="160" y="124" text-anchor="middle" class="node-sub">NotificationListener � OfflineBanner � Toasts</text>
+    </g>
+
+    <!-- Loop back to Discover -->
+    <path d="M 2452 492 L 2452 640 L 1350 640 L 1350 500" class="arrow-brand" fill="none"/>
+    <text x="1900" y="660" class="caption" font-size="12">Return loop ? Discover / Matches / Library</text>
+
+    <!-- Profile exit branches -->
+    <g transform="translate(2520, 540)">
+      <rect width="120" height="52" rx="10" fill="#fef2f2" stroke="#ef4444"/>
+      <text x="60" y="22" text-anchor="middle" class="node-text" font-size="11" fill="#b91c1c">Pause</text>
+      <text x="60" y="38" text-anchor="middle" class="node-sub" fill="#b91c1c">Hidden from deck</text>
+    </g>
+    <g transform="translate(2660, 540)">
+      <rect width="120" height="52" rx="10" fill="#fef2f2" stroke="#ef4444"/>
+      <text x="60" y="22" text-anchor="middle" class="node-text" font-size="11" fill="#b91c1c">Delete</text>
+      <text x="60" y="38" text-anchor="middle" class="node-sub" fill="#b91c1c">Edge fn � exit</text>
+    </g>
+    <line x1="2612" y1="492" x2="2580" y2="540" class="arrow-danger"/>
+    <line x1="2720" y1="492" x2="2720" y2="540" class="arrow-danger"/>
+
+    <line x1="2612" y1="420" x2="2820" y2="420" class="arrow"/>
+
+    <!-- 13 Retention -->
+    <g transform="translate(2820, 372)">
+      <rect width="200" height="96" rx="12" fill="#ffffff" stroke="#e7e5e4" filter="url(#shadow)"/>
+      <text x="100" y="36" text-anchor="middle" class="node-text">Retention</text>
+      <text x="100" y="54" text-anchor="middle" class="node-sub">Toast ? chat</text>
+      <text x="100" y="70" text-anchor="middle" class="node-sub">Daily return</text>
+    </g>
+    <line x1="3020" y1="420" x2="3052" y2="420" class="arrow"/>
+
+    <!-- END -->
+    <ellipse cx="3120" cy="420" rx="68" ry="36" fill="#1c1917"/>
+    <text x="3120" y="418" text-anchor="middle" fill="#fafaf9" font-family="Inter,sans-serif" font-weight="600" font-size="12">CHURN /</text>
+    <text x="3120" y="434" text-anchor="middle" fill="#fafaf9" font-family="Inter,sans-serif" font-weight="600" font-size="12">EXIT</text>
+
+    <!-- Auth chain annotation -->
+    <g transform="translate(60, 640)">
+      <rect width="3040" height="56" rx="10" fill="#ffffff" stroke="#e7e5e4"/>
+      <text x="20" y="24" class="label">AUTH CHAIN</text>
+      <text x="20" y="44" class="body" font-size="13">session ? profile load ? onboarding_complete? ? identity_verified? ? main app � AuthGuard spinner on load</text>
+    </g>
+  </g>
+
+  <!-- ??? COMPETITIVE STRIP (horizontal) ??? -->
+  <g id="competitive" transform="translate(60, 900)">
+    <text x="0" y="0" class="heading" font-size="20">Competitive patterns ? Chapter opportunities</text>
+
+    <g transform="translate(0, 24)">
+      <!-- Tinder -->
+      <rect width="1180" height="88" rx="10" fill="#ffffff" stroke="#e7e5e4"/>
+      <text x="16" y="28" class="heading" font-size="13">Tinder</text>
+      <text x="100" y="24" class="body" font-size="12">Fast onboarding � 1 prompt/screen � swipe tutorial early</text>
+      <text x="100" y="44" class="node-sub">? Chapter: taste preview before verify; don�t block curiosity</text>
+      <text x="100" y="64" class="node-sub">? Keep swipe speed; add book-like (Hinge-style) not just photo swipe</text>
+
+      <!-- Hinge -->
+      <g transform="translate(1200, 0)">
+        <rect width="1180" height="88" rx="10" fill="#ffffff" stroke="#e7e5e4"/>
+        <text x="16" y="28" class="heading" font-size="13">Hinge</text>
+        <text x="100" y="24" class="body" font-size="12">Deep profile � prompts � comment-to-like</text>
+        <text x="100" y="44" class="node-sub">? Chapter: reading prompts + like-a-book with note</text>
+        <text x="100" y="64" class="node-sub">? Label onboarding steps clearly (avoid Hinge�s interrupted flow)</text>
+      </g>
+
+      <!-- Bumble -->
+      <g transform="translate(2400, 0)">
+        <rect width="1180" height="88" rx="10" fill="#ffffff" stroke="#e7e5e4"/>
+        <text x="16" y="28" class="heading" font-size="13">Bumble</text>
+        <text x="100" y="24" class="body" font-size="12">Pose selfie verify � Opening Moves � safety brand</text>
+        <text x="100" y="44" class="node-sub">? Chapter: verified badge on cards; explain Stripe before browser</text>
+        <text x="100" y="64" class="node-sub">? Defer push notifications until after first match</text>
+      </g>
+
+      <!-- Feeld + Chapter -->
+      <g transform="translate(0, 104)">
+        <rect width="2380" height="88" rx="10" fill="#ffffff" stroke="#e7e5e4"/>
+        <text x="16" y="28" class="heading" font-size="13">Feeld</text>
+        <text x="100" y="24" class="body" font-size="12">Desires � intent transparency � partner linking</text>
+        <text x="100" y="44" class="node-sub">? Chapter: reading intent tags � currently reading � audiobook vs print</text>
+        <text x="100" y="64" class="node-sub">? Library tab = living profile (unique moat none of them have)</text>
+      </g>
+
+      <g transform="translate(2400, 104)">
+        <rect width="1180" height="88" rx="10" fill="#fef3c7" stroke="#fbbf24" stroke-width="2"/>
+        <text x="16" y="28" class="heading" font-size="13">Chapter moat</text>
+        <text x="130" y="24" class="body" font-size="12">Books�3 + genres�1 scoring � Library shelves � BookDetail everywhere</text>
+        <text x="130" y="44" class="node-sub">Strongest verify (Stripe) � soften UX, not the gate itself</text>
+        <text x="130" y="64" class="node-sub">Skip: 58-screen onboarding � swipe-only shallow profiles</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- Phase labels along top -->
+  <g transform="translate(60, 200)" class="caption" font-size="10" fill="#a8a29e">
+    <text x="128" y="0">ACQUIRE</text>
+    <text x="488" y="0">AUTH</text>
+    <text x="800" y="0">ONBOARD</text>
+    <text x="1040" y="0">TRUST</text>
+    <text x="1320" y="0">CORE LOOP</text>
+    <text x="2100" y="0">CONNECT</text>
+    <text x="2480" y="0">RETAIN</text>
+  </g>
+</svg>

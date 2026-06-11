@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { Button, Chip, Spinner, Textarea } from '../components/ui'
 import { useAuthStore } from '../store/auth'
 import { supabase } from '../lib/supabase'
 import type { RealtimeChannel } from '@supabase/supabase-js'
@@ -187,13 +188,13 @@ export default function Chat() {
   }
 
   return (
-    <div className="h-dvh bg-stone-50 flex flex-col overflow-hidden">
+    <div className="h-dvh bg-canvas flex flex-col overflow-hidden">
 
       {/* Header */}
-      <div className="flex-shrink-0 bg-white border-b border-stone-200 px-4 safe-top pb-3 flex items-center gap-3">
+      <div className="flex-shrink-0 bg-surface border-b border-border px-4 safe-top pb-3 flex items-center gap-3">
         <button
           onClick={() => navigate('/matches')}
-          className="text-3xl text-stone-500 hover:text-stone-900 transition-colors p-1 -ml-1"
+          className="text-3xl text-muted hover:text-ink transition-colors p-1 -ml-1"
           aria-label="Back"
         >
           ‹
@@ -201,13 +202,13 @@ export default function Chat() {
         {partner.photo ? (
           <img src={partner.photo} alt="" className="w-9 h-9 rounded-full object-cover" />
         ) : (
-          <div className="w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center text-base">📖</div>
+          <div className="w-9 h-9 rounded-full bg-brand-subtle flex items-center justify-center text-base">📖</div>
         )}
-        <p className="font-semibold text-stone-900 flex-1">{partner.name ?? 'Reader'}</p>
+        <p className="font-semibold text-ink flex-1">{partner.name ?? 'Reader'}</p>
         <div className="relative">
           <button
             onClick={() => setShowMenu(m => !m)}
-            className="w-8 h-8 flex items-center justify-center text-stone-400 hover:text-stone-700 transition-colors"
+            className="w-8 h-8 flex items-center justify-center text-subtle hover:text-ink-secondary transition-colors"
             aria-label="More options"
           >
             <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
@@ -217,22 +218,22 @@ export default function Chat() {
           {showMenu && (
             <>
               <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
-              <div className="absolute right-0 top-10 bg-white rounded-xl shadow-xl border border-stone-100 z-50 min-w-40 overflow-hidden">
+              <div className="absolute right-0 top-10 bg-surface rounded-xl shadow-xl border border-border z-50 min-w-40 overflow-hidden">
                 <button
                   onClick={() => { setShowMenu(false); setShowReport(true) }}
-                  className="w-full px-4 py-3 text-left text-sm text-stone-700 hover:bg-stone-50 transition-colors"
+                  className="w-full px-4 py-3 text-left text-sm text-ink-secondary hover:bg-canvas transition-colors"
                 >
                   Report
                 </button>
                 <button
                   onClick={() => { setShowMenu(false); setShowBlockConfirm(true) }}
-                  className="w-full px-4 py-3 text-left text-sm text-red-500 hover:bg-red-50 transition-colors"
+                  className="w-full px-4 py-3 text-left text-sm text-destructive hover:bg-destructive-subtle transition-colors"
                 >
                   Block
                 </button>
                 <button
                   onClick={() => { setShowMenu(false); setShowUnmatchConfirm(true) }}
-                  className="w-full px-4 py-3 text-left text-sm text-red-500 hover:bg-red-50 transition-colors border-t border-stone-100"
+                  className="w-full px-4 py-3 text-left text-sm text-destructive hover:bg-destructive-subtle transition-colors border-t border-border"
                 >
                   Unmatch
                 </button>
@@ -246,21 +247,18 @@ export default function Chat() {
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2">
         {loading ? (
           <div className="flex justify-center pt-8">
-            <div className="w-6 h-6 border-4 border-amber-400 border-t-transparent rounded-full animate-spin" />
+            <Spinner className="w-6 h-6" />
           </div>
         ) : loadError ? (
           <div className="flex flex-col items-center pt-16 px-8 text-center">
-            <p className="font-semibold text-stone-900">Couldn't load messages</p>
-            <p className="text-stone-400 text-sm mt-1">Check your connection and try again.</p>
-            <button
-              onClick={loadInitial}
-              className="mt-5 px-5 py-2.5 rounded-xl bg-amber-400 text-stone-900 font-semibold text-sm"
-            >
+            <p className="font-semibold text-ink">Couldn't load messages</p>
+            <p className="text-subtle text-sm mt-1">Check your connection and try again.</p>
+            <Button onClick={loadInitial} size="sm" className="mt-5">
               Try again
-            </button>
+            </Button>
           </div>
         ) : messages.length === 0 ? (
-          <p className="text-center text-stone-400 text-sm pt-8">
+          <p className="text-center text-subtle text-sm pt-8">
             Say hello to {partner.name ?? 'your match'}!
           </p>
         ) : (
@@ -270,11 +268,11 @@ export default function Chat() {
               <div key={msg.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[75%] px-4 py-2 rounded-2xl text-sm ${
                   mine
-                    ? 'bg-amber-400 text-stone-900 rounded-br-sm'
-                    : 'bg-white text-stone-900 shadow-sm rounded-bl-sm'
+                    ? 'bg-brand text-on-brand rounded-br-sm'
+                    : 'bg-surface text-ink shadow-sm rounded-bl-sm'
                 }`}>
                   <p>{msg.content}</p>
-                  <p className={`text-xs mt-1 ${mine ? 'text-stone-700/60' : 'text-stone-400'}`}>
+                  <p className={`text-xs mt-1 ${mine ? 'text-ink-secondary/60' : 'text-subtle'}`}>
                     {formatTime(msg.created_at)}
                   </p>
                 </div>
@@ -284,11 +282,11 @@ export default function Chat() {
         )}
         {partnerTyping && (
           <div className="flex justify-start">
-            <div className="bg-white text-stone-900 shadow-sm rounded-2xl rounded-bl-sm px-4 py-3">
+            <div className="bg-surface text-ink shadow-sm rounded-2xl rounded-bl-sm px-4 py-3">
               <div className="flex gap-1 items-center h-4">
-                <span className="w-1.5 h-1.5 bg-stone-400 rounded-full animate-bounce [animation-delay:0ms]" />
-                <span className="w-1.5 h-1.5 bg-stone-400 rounded-full animate-bounce [animation-delay:150ms]" />
-                <span className="w-1.5 h-1.5 bg-stone-400 rounded-full animate-bounce [animation-delay:300ms]" />
+                <span className="w-1.5 h-1.5 bg-subtle rounded-full animate-bounce [animation-delay:0ms]" />
+                <span className="w-1.5 h-1.5 bg-subtle rounded-full animate-bounce [animation-delay:150ms]" />
+                <span className="w-1.5 h-1.5 bg-subtle rounded-full animate-bounce [animation-delay:300ms]" />
               </div>
             </div>
           </div>
@@ -297,27 +295,28 @@ export default function Chat() {
       </div>
 
       {/* Input */}
-      <div className="flex-shrink-0 bg-white border-t border-stone-200 px-4 py-3 flex flex-col gap-1">
+      <div className="flex-shrink-0 bg-surface border-t border-border px-4 py-3 flex flex-col gap-1">
       {sendError && (
-        <p className="text-xs text-red-500 text-center">Message failed to send — please try again.</p>
+        <p className="text-xs text-destructive text-center">Message failed to send — please try again.</p>
       )}
       <div className="flex items-end gap-3">
-        <textarea
+        <Textarea
           value={text}
           onChange={handleTextChange}
           onKeyDown={handleKey}
           placeholder="Type a message…"
           rows={1}
-          className="flex-1 resize-none rounded-2xl border border-stone-200 px-4 py-2.5 text-sm text-stone-900 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-400 max-h-32"
+          className="flex-1 rounded-2xl py-2.5 text-sm max-h-32"
         />
-        <button
+        <Button
           onClick={send}
           disabled={!text.trim() || sending}
-          className="w-10 h-10 rounded-full bg-amber-400 hover:bg-amber-500 flex items-center justify-center text-stone-900 font-bold transition-colors disabled:opacity-40 flex-shrink-0"
+          size="icon"
+          className="rounded-full flex-shrink-0"
           aria-label="Send"
         >
           ↑
-        </button>
+        </Button>
       </div>
       </div>
 
@@ -328,27 +327,20 @@ export default function Chat() {
           onClick={() => setShowUnmatchConfirm(false)}
         >
           <div
-            className="bg-white rounded-3xl p-6 max-w-xs w-full shadow-2xl"
+            className="bg-surface rounded-3xl p-6 max-w-xs w-full shadow-2xl"
             onClick={e => e.stopPropagation()}
           >
-            <h2 className="text-lg font-bold text-stone-900 mb-2">Unmatch?</h2>
-            <p className="text-stone-500 text-sm mb-6">
+            <h2 className="text-lg font-bold text-ink mb-2">Unmatch?</h2>
+            <p className="text-muted text-sm mb-6">
               This will remove your match with {partner.name ?? 'this person'} and delete the conversation.
             </p>
             <div className="flex gap-3">
-              <button
-                onClick={() => setShowUnmatchConfirm(false)}
-                className="flex-1 py-2.5 rounded-xl border border-stone-200 text-stone-600 font-semibold text-sm hover:bg-stone-50 transition-colors"
-              >
+              <Button variant="secondary" onClick={() => setShowUnmatchConfirm(false)} className="flex-1">
                 Cancel
-              </button>
-              <button
-                onClick={unmatch}
-                disabled={unmatching}
-                className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold text-sm transition-colors disabled:opacity-50"
-              >
+              </Button>
+              <Button variant="destructive" onClick={unmatch} disabled={unmatching} className="flex-1">
                 {unmatching ? 'Removing…' : 'Unmatch'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -361,27 +353,20 @@ export default function Chat() {
           onClick={() => setShowBlockConfirm(false)}
         >
           <div
-            className="bg-white rounded-3xl p-6 max-w-xs w-full shadow-2xl"
+            className="bg-surface rounded-3xl p-6 max-w-xs w-full shadow-2xl"
             onClick={e => e.stopPropagation()}
           >
-            <h2 className="text-lg font-bold text-stone-900 mb-2">Block {partner.name ?? 'this person'}?</h2>
-            <p className="text-stone-500 text-sm mb-6">
+            <h2 className="text-lg font-bold text-ink mb-2">Block {partner.name ?? 'this person'}?</h2>
+            <p className="text-muted text-sm mb-6">
               They won't appear in your matches or swipe deck. This will also remove your conversation.
             </p>
             <div className="flex gap-3">
-              <button
-                onClick={() => setShowBlockConfirm(false)}
-                className="flex-1 py-2.5 rounded-xl border border-stone-200 text-stone-600 font-semibold text-sm hover:bg-stone-50 transition-colors"
-              >
+              <Button variant="secondary" onClick={() => setShowBlockConfirm(false)} className="flex-1">
                 Cancel
-              </button>
-              <button
-                onClick={block}
-                disabled={blocking}
-                className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold text-sm transition-colors disabled:opacity-50"
-              >
+              </Button>
+              <Button variant="destructive" onClick={block} disabled={blocking} className="flex-1">
                 {blocking ? 'Blocking…' : 'Block'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -394,55 +379,47 @@ export default function Chat() {
           onClick={reportDone ? closeReport : undefined}
         >
           <div
-            className="bg-white rounded-3xl p-6 max-w-xs w-full shadow-2xl"
+            className="bg-surface rounded-3xl p-6 max-w-xs w-full shadow-2xl"
             onClick={e => e.stopPropagation()}
           >
             {reportDone ? (
               <>
-                <h2 className="text-lg font-bold text-stone-900 mb-2">Report submitted</h2>
-                <p className="text-stone-500 text-sm mb-6">
+                <h2 className="text-lg font-bold text-ink mb-2">Report submitted</h2>
+                <p className="text-muted text-sm mb-6">
                   Thanks for letting us know. We'll review your report.
                 </p>
-                <button
-                  onClick={closeReport}
-                  className="w-full py-2.5 rounded-xl bg-stone-900 text-white font-semibold text-sm hover:bg-stone-700 transition-colors"
-                >
+                <Button onClick={closeReport} fullWidth>
                   Done
-                </button>
+                </Button>
               </>
             ) : (
               <>
-                <h2 className="text-lg font-bold text-stone-900 mb-1">Report {partner.name ?? 'this person'}</h2>
-                <p className="text-stone-500 text-sm mb-4">What's the issue?</p>
-                <div className="space-y-2 mb-6">
+                <h2 className="text-lg font-bold text-ink mb-1">Report {partner.name ?? 'this person'}</h2>
+                <p className="text-muted text-sm mb-4">What's the issue?</p>
+                <div className="flex flex-wrap gap-2 mb-6">
                   {REPORT_REASONS.map(reason => (
-                    <button
+                    <Chip
                       key={reason}
+                      selected={reportReason === reason}
                       onClick={() => setReportReason(reason)}
-                      className={`w-full px-4 py-2.5 rounded-xl border text-sm text-left transition-colors ${
-                        reportReason === reason
-                          ? 'border-amber-400 bg-amber-50 text-stone-900 font-medium'
-                          : 'border-stone-200 text-stone-700 hover:bg-stone-50'
-                      }`}
+                      className="w-full justify-start text-left"
                     >
                       {reason}
-                    </button>
+                    </Chip>
                   ))}
                 </div>
                 <div className="flex gap-3">
-                  <button
-                    onClick={closeReport}
-                    className="flex-1 py-2.5 rounded-xl border border-stone-200 text-stone-600 font-semibold text-sm hover:bg-stone-50 transition-colors"
-                  >
+                  <Button variant="secondary" onClick={closeReport} className="flex-1">
                     Cancel
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="destructive"
                     onClick={report}
                     disabled={!reportReason || reporting}
-                    className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold text-sm transition-colors disabled:opacity-50"
+                    className="flex-1"
                   >
                     {reporting ? 'Sending…' : 'Report'}
-                  </button>
+                  </Button>
                 </div>
               </>
             )}

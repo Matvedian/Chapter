@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Button, Chip, OnboardingStepHeader } from '../../components/ui'
 import { supabase } from '../../lib/supabase'
 import type { OnboardingData } from './index'
 
@@ -29,43 +30,44 @@ export default function StepGenres({ onNext }: Props) {
 
   return (
     <div className="px-6 pt-6 pb-10">
-      <h2 className="text-2xl font-bold text-stone-900 mb-1">Your genres</h2>
-      <p className="text-stone-500 text-sm mb-8">
-        Pick at least 3 genres you love.{' '}
-        {selected.length > 0 && (
-          <span className="text-amber-600 font-medium">{selected.length} selected</span>
-        )}
-      </p>
+      <OnboardingStepHeader
+        title="Your genres"
+        description={
+          selected.length > 0
+            ? `Pick at least 3 genres you love. ${selected.length} selected`
+            : 'Pick at least 3 genres you love.'
+        }
+      />
 
       <div className="flex flex-wrap gap-2 mb-10">
         {genres.map(g => (
-          <button
+          <Chip
             key={g.id}
+            selected={selected.includes(g.id)}
             onClick={() => toggle(g.id)}
-            className={`px-4 py-2 rounded-full text-sm font-medium border transition-colors ${
-              selected.includes(g.id)
-                ? 'bg-amber-400 border-amber-400 text-stone-900'
-                : 'bg-white border-stone-200 text-stone-700 hover:border-amber-300'
-            }`}
           >
             {g.name}
-          </button>
+          </Chip>
         ))}
       </div>
 
-      <button
+      <Button
         onClick={() => onNext({ genreIds: selected })}
         disabled={selected.length < 3}
-        className="w-full py-3 rounded-xl bg-amber-400 hover:bg-amber-500 text-stone-900 font-semibold transition-colors disabled:opacity-40"
+        fullWidth
+        className="disabled:opacity-40"
       >
         Continue
-      </button>
-      <button
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        fullWidth
         onClick={() => onNext({ genreIds: [] })}
-        className="w-full py-2 mt-3 text-sm text-stone-400 hover:text-stone-600 transition-colors"
+        className="mt-3"
       >
         Skip for now
-      </button>
+      </Button>
     </div>
   )
 }

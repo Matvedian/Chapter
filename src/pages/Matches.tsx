@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/auth'
 import { supabase } from '../lib/supabase'
 import BottomNav from '../components/BottomNav'
+import { Button, Input } from '../components/ui'
 
 function SkeletonRow() {
   return (
@@ -145,19 +146,19 @@ export default function Matches() {
     : items
 
   return (
-    <div className="h-screen bg-stone-50 flex flex-col overflow-hidden">
+    <div className="h-screen bg-canvas flex flex-col overflow-hidden">
       <div className="px-6 safe-top pb-3 flex-shrink-0">
-        <h1 className="text-2xl font-bold text-stone-900 mb-3">Matches</h1>
+        <h1 className="text-display text-2xl mb-3">Matches</h1>
         <div className="relative">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-subtle z-10 pointer-events-none" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
             <circle cx={11} cy={11} r={8} /><path d="m21 21-4.35-4.35" />
           </svg>
-          <input
+          <Input
             type="search"
             placeholder="Search matches…"
             value={query}
             onChange={e => setQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 rounded-xl bg-white border border-stone-200 text-stone-800 placeholder-stone-400 text-sm outline-none focus:border-amber-400"
+            className="pl-9 py-2 text-sm"
           />
         </div>
       </div>
@@ -169,26 +170,23 @@ export default function Matches() {
           </div>
         ) : fetchError ? (
           <div className="text-center px-8 pt-16">
-            <h2 className="text-lg font-bold text-stone-900">Couldn't load matches</h2>
-            <p className="text-stone-500 text-sm mt-1">Check your connection and try again.</p>
-            <button
-              onClick={load}
-              className="mt-5 px-5 py-2.5 rounded-xl bg-amber-400 text-stone-900 font-semibold text-sm"
-            >
+            <h2 className="text-lg font-bold text-ink">Couldn't load matches</h2>
+            <p className="text-muted text-sm mt-1">Check your connection and try again.</p>
+            <Button onClick={load} size="sm" className="mt-5">
               Try again
-            </button>
+            </Button>
           </div>
         ) : items.length === 0 ? (
           <div className="text-center px-8 pt-16">
             <p className="text-4xl mb-3">❤️</p>
-            <h2 className="text-lg font-bold text-stone-900">No matches yet</h2>
-            <p className="text-stone-500 text-sm mt-1">Keep swiping to find your next great read — and reader.</p>
+            <h2 className="text-lg font-bold text-ink">No matches yet</h2>
+            <p className="text-muted text-sm mt-1">Keep swiping to find your next great read — and reader.</p>
           </div>
         ) : filteredItems.length === 0 ? (
           <div className="text-center px-8 pt-16">
             <p className="text-4xl mb-3">🔍</p>
-            <h2 className="text-lg font-bold text-stone-900">No results</h2>
-            <p className="text-stone-500 text-sm mt-1">No matches found for "{query}".</p>
+            <h2 className="text-lg font-bold text-ink">No results</h2>
+            <p className="text-muted text-sm mt-1">No matches found for "{query}".</p>
           </div>
         ) : (
           <ul>
@@ -196,32 +194,32 @@ export default function Matches() {
               <li key={item.matchId}>
                 <button
                   onClick={() => navigate(`/chat/${item.matchId}`)}
-                  className="w-full flex items-center gap-4 px-6 py-4 hover:bg-stone-100 transition-colors text-left"
+                  className="w-full flex items-center gap-4 px-6 py-4 hover:bg-canvas transition-colors text-left"
                 >
                   {item.photo ? (
                     <img src={item.photo} alt="" className="w-14 h-14 rounded-full object-cover flex-shrink-0" />
                   ) : (
-                    <div className="w-14 h-14 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0 text-2xl">
+                    <div className="w-14 h-14 rounded-full bg-brand-subtle flex items-center justify-center flex-shrink-0 text-2xl">
                       📖
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-baseline justify-between">
-                      <p className={`font-semibold text-stone-900 truncate ${item.unread ? 'font-bold' : ''}`}>
+                      <p className={`font-semibold text-ink truncate ${item.unread ? 'font-bold' : ''}`}>
                         {item.name ?? 'Reader'}
                       </p>
                       {item.lastAt && (
-                        <span className="text-xs text-stone-400 ml-2 flex-shrink-0">
+                        <span className="text-xs text-subtle ml-2 flex-shrink-0">
                           {timeAgo(item.lastAt)}
                         </span>
                       )}
                     </div>
-                    <p className={`text-sm truncate mt-0.5 ${item.unread ? 'text-stone-900 font-medium' : 'text-stone-400'}`}>
+                    <p className={`text-sm truncate mt-0.5 ${item.unread ? 'text-ink font-medium' : 'text-subtle'}`}>
                       {item.lastMessage ?? 'New match — say hello!'}
                     </p>
                   </div>
                   {item.unread && (
-                    <div className="w-2.5 h-2.5 rounded-full bg-amber-400 flex-shrink-0" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-brand flex-shrink-0" />
                   )}
                 </button>
               </li>

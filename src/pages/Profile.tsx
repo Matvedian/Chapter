@@ -6,6 +6,7 @@ import { useProfileStore } from '../store/profile'
 import { supabase } from '../lib/supabase'
 // SPOTIFY STANDBY: import { generateCodeVerifier, getAuthUrl, getSavedAudiobooks, refreshAccessToken } from '../lib/spotify'
 import BottomNav from '../components/BottomNav'
+import { Button } from '../components/ui'
 
 function getAge(birthDate: string): number {
   const today = new Date()
@@ -112,14 +113,14 @@ export default function Profile() {
   }
 
   return (
-    <div className="h-screen bg-stone-50 flex flex-col overflow-hidden">
+    <div className="h-screen bg-canvas flex flex-col overflow-hidden">
       <div className="px-6 safe-top pb-4 flex-shrink-0">
-        <h1 className="text-2xl font-bold text-stone-900">Profile</h1>
+        <h1 className="text-display text-2xl">Profile</h1>
       </div>
 
       {profile?.paused && (
-        <div className="bg-amber-400 px-6 py-2 text-center flex-shrink-0">
-          <p className="text-stone-900 text-sm font-medium">Your profile is paused — you're hidden from Discover</p>
+        <div className="bg-brand px-6 py-2 text-center flex-shrink-0">
+          <p className="text-ink text-sm font-medium">Your profile is paused — you're hidden from Discover</p>
         </div>
       )}
 
@@ -129,45 +130,42 @@ export default function Profile() {
           {photo ? (
             <img src={photo} alt="" className="w-28 h-28 rounded-full object-cover shadow-md" />
           ) : (
-            <div className="w-28 h-28 rounded-full bg-amber-100 flex items-center justify-center text-5xl shadow-md">
+            <div className="w-28 h-28 rounded-full bg-brand-subtle flex items-center justify-center text-5xl shadow-md">
               📖
             </div>
           )}
-          <p className="mt-4 text-2xl font-bold text-stone-900">
+          <p className="mt-4 text-2xl font-bold text-ink">
             {profile?.name ?? 'Reader'}
             {age !== null ? `, ${age}` : ''}
           </p>
           {profile?.gender && (
-            <p className="text-stone-500 text-sm mt-1 capitalize">{profile.gender}</p>
+            <p className="text-muted text-sm mt-1 capitalize">{profile.gender}</p>
           )}
           {profile?.bio && (
-            <p className="text-stone-600 text-sm mt-3 text-center leading-relaxed">{profile.bio}</p>
+            <p className="text-ink-secondary text-sm mt-3 text-center leading-relaxed">{profile.bio}</p>
           )}
         </div>
 
         {/* Edit profile */}
-        <button
-          onClick={() => navigate('/profile/edit')}
-          className="w-full py-3 rounded-xl bg-amber-400 hover:bg-amber-500 text-stone-900 font-semibold transition-colors mb-3"
-        >
+        <Button onClick={() => navigate('/profile/edit')} fullWidth className="mb-3">
           Edit profile
-        </button>
+        </Button>
 
         {/* SPOTIFY STANDBY: Connected platforms section hidden until Client ID is configured */}
 
         {/* Pause profile */}
-        <section className="bg-white rounded-2xl border border-stone-100 px-5 py-4 mb-3">
+        <section className="bg-surface rounded-2xl border border-border px-5 py-4 mb-3">
           <div className="flex items-center justify-between">
             <div className="flex-1 min-w-0 pr-4">
-              <p className="text-sm font-semibold text-stone-900">Pause my profile</p>
-              <p className="text-xs text-stone-400 mt-0.5">Hide yourself from Discover. You can unpause anytime.</p>
+              <p className="text-sm font-semibold text-ink">Pause my profile</p>
+              <p className="text-xs text-subtle mt-0.5">Hide yourself from Discover. You can unpause anytime.</p>
             </div>
             <button
               disabled={pauseWorking}
               onClick={() => togglePause(!profile?.paused)}
-              className={`w-12 h-7 rounded-full transition-colors flex-shrink-0 relative disabled:opacity-40 ${profile?.paused ? 'bg-amber-400' : 'bg-stone-200'}`}
+              className={`w-12 h-7 rounded-full transition-colors flex-shrink-0 relative disabled:opacity-40 ${profile?.paused ? 'bg-brand' : 'bg-border'}`}
             >
-              <span className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow transition-transform ${profile?.paused ? 'translate-x-6' : 'translate-x-1'}`} />
+              <span className={`absolute top-1 w-5 h-5 rounded-full bg-surface shadow transition-transform ${profile?.paused ? 'translate-x-6' : 'translate-x-1'}`} />
             </button>
           </div>
         </section>
@@ -175,7 +173,7 @@ export default function Profile() {
         {/* Sign out */}
         <button
           onClick={signOut}
-          className="w-full py-3 rounded-xl border border-stone-200 bg-white text-stone-700 font-medium hover:bg-stone-100 transition-colors mb-3"
+          className="w-full py-3 rounded-xl border border-border bg-surface text-ink-secondary font-medium hover:bg-canvas transition-colors mb-3"
         >
           Sign out
         </button>
@@ -183,7 +181,7 @@ export default function Profile() {
         {/* Delete account */}
         <button
           onClick={() => setDeleteState('confirming')}
-          className="w-full py-3 rounded-xl text-red-500 text-sm font-medium"
+          className="w-full py-3 rounded-xl text-destructive text-sm font-medium"
         >
           Delete account
         </button>
@@ -192,24 +190,18 @@ export default function Profile() {
       {/* Pause confirmation modal */}
       {showPauseConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-8 bg-black/40">
-          <div className="bg-white rounded-3xl p-6 w-full max-w-sm">
-            <h2 className="text-lg font-bold text-stone-900 mb-2">Pause your profile?</h2>
-            <p className="text-stone-500 text-sm leading-relaxed mb-6">
+          <div className="bg-surface rounded-3xl p-6 w-full max-w-sm">
+            <h2 className="text-lg font-bold text-ink mb-2">Pause your profile?</h2>
+            <p className="text-muted text-sm leading-relaxed mb-6">
               You won't appear in anyone's deck while paused. You can unpause anytime from your profile.
             </p>
             <div className="flex gap-3">
-              <button
-                onClick={() => setShowPauseConfirm(false)}
-                className="flex-1 py-3 rounded-xl border border-stone-200 text-stone-700 font-medium text-sm"
-              >
+              <Button variant="secondary" onClick={() => setShowPauseConfirm(false)} className="flex-1">
                 Cancel
-              </button>
-              <button
-                onClick={confirmPause}
-                className="flex-1 py-3 rounded-xl bg-amber-400 text-stone-900 font-semibold text-sm"
-              >
+              </Button>
+              <Button onClick={confirmPause} className="flex-1">
                 Pause
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -218,29 +210,31 @@ export default function Profile() {
       {/* Delete account modal */}
       {(deleteState === 'confirming' || deleteState === 'deleting' || deleteState === 'error') && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-8 bg-black/40">
-          <div className="bg-white rounded-3xl p-6 w-full max-w-sm">
-            <h2 className="text-lg font-bold text-stone-900 mb-2">Delete your account?</h2>
-            <p className="text-stone-500 text-sm leading-relaxed mb-4">
+          <div className="bg-surface rounded-3xl p-6 w-full max-w-sm">
+            <h2 className="text-lg font-bold text-ink mb-2">Delete your account?</h2>
+            <p className="text-muted text-sm leading-relaxed mb-4">
               This will permanently delete your profile, matches, and messages. This cannot be undone.
             </p>
             {deleteState === 'error' && (
-              <p className="text-red-500 text-xs mb-4">{deleteError}</p>
+              <p className="text-destructive text-xs mb-4">{deleteError}</p>
             )}
             <div className="flex gap-3">
-              <button
+              <Button
+                variant="secondary"
                 disabled={deleteState === 'deleting'}
                 onClick={() => setDeleteState('idle')}
-                className="flex-1 py-3 rounded-xl border border-stone-200 text-stone-700 font-medium text-sm disabled:opacity-40"
+                className="flex-1"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="destructive"
                 disabled={deleteState === 'deleting'}
                 onClick={deleteAccount}
-                className="flex-1 py-3 rounded-xl bg-red-500 text-white font-semibold text-sm disabled:opacity-40"
+                className="flex-1"
               >
                 {deleteState === 'deleting' ? 'Deleting…' : 'Delete'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

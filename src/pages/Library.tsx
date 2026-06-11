@@ -148,14 +148,14 @@ export default function Library() {
   const inLibraryIds = new Set(books.map(b => b.external_id))
 
   return (
-    <div className="h-screen bg-stone-50 flex flex-col overflow-hidden">
+    <div className="h-screen bg-canvas flex flex-col overflow-hidden">
 
       {/* Header */}
       <div className="px-6 safe-top pb-3 flex-shrink-0 flex items-end justify-between">
-        <h1 className="text-2xl font-bold text-stone-900">My Library</h1>
+        <h1 className="text-display text-2xl">My Library</h1>
         <button
           onClick={() => { setShowSearch(true); setQuery(''); setResults([]) }}
-          className="w-9 h-9 rounded-full bg-amber-400 flex items-center justify-center text-stone-900 font-bold text-xl leading-none"
+          className="w-9 h-9 rounded-full bg-brand flex items-center justify-center text-ink font-bold text-xl leading-none"
         >
           +
         </button>
@@ -169,8 +169,8 @@ export default function Library() {
             onClick={() => setActiveShelf(s.key)}
             className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
               activeShelf === s.key
-                ? 'bg-amber-400 text-stone-900'
-                : 'bg-white border border-stone-200 text-stone-500'
+                ? 'bg-brand text-ink'
+                : 'bg-surface border border-border text-muted'
             }`}
           >
             {s.label}
@@ -192,10 +192,10 @@ export default function Library() {
         ) : visible.length === 0 ? (
           <div className="text-center pt-16">
             <p className="text-4xl mb-3">📚</p>
-            <h2 className="text-lg font-bold text-stone-900">
+            <h2 className="text-lg font-bold text-ink">
               {activeShelf === 'all' ? 'Your library is empty' : `No books here yet`}
             </h2>
-            <p className="text-stone-500 text-sm mt-1">Tap + to add your first book.</p>
+            <p className="text-muted text-sm mt-1">Tap + to add your first book.</p>
           </div>
         ) : (
           <div className="grid grid-cols-3 gap-4">
@@ -212,16 +212,16 @@ export default function Library() {
                       className="w-full aspect-[2/3] object-cover rounded-xl shadow-sm"
                     />
                   ) : (
-                    <div className="w-full aspect-[2/3] rounded-xl bg-amber-100 flex items-center justify-center text-amber-700 text-xs font-medium text-center px-2">
+                    <div className="w-full aspect-[2/3] rounded-xl bg-brand-subtle flex items-center justify-center text-brand-ink text-xs font-medium text-center px-2">
                       {book.title.slice(0, 30)}
                     </div>
                   )}
                 </button>
                 <button onClick={() => setSelected(book)} className="text-left">
-                  <p className="text-xs font-medium text-stone-900 leading-tight line-clamp-2">{book.title}</p>
-                  <p className="text-xs text-stone-400 truncate">{book.author}</p>
+                  <p className="text-xs font-medium text-ink leading-tight line-clamp-2">{book.title}</p>
+                  <p className="text-xs text-subtle truncate">{book.author}</p>
                   {book.rating && (
-                    <p className="text-xs text-amber-400 leading-none">{'★'.repeat(book.rating)}{'☆'.repeat(5 - book.rating)}</p>
+                    <p className="text-xs text-brand leading-none">{'★'.repeat(book.rating)}{'☆'.repeat(5 - book.rating)}</p>
                   )}
                 </button>
               </div>
@@ -234,10 +234,10 @@ export default function Library() {
 
       {/* Add book panel */}
       {showSearch && (
-        <div className="fixed inset-0 z-50 flex flex-col bg-stone-50">
-          <div className="px-6 safe-top pb-3 flex items-center gap-3 bg-white border-b border-stone-100">
-            <button onClick={() => setShowSearch(false)} className="text-3xl text-stone-500 p-1 -ml-1">‹</button>
-            <h2 className="font-semibold text-stone-900 flex-1">Add to library</h2>
+        <div className="fixed inset-0 z-50 flex flex-col bg-canvas">
+          <div className="px-6 safe-top pb-3 flex items-center gap-3 bg-surface border-b border-border">
+            <button onClick={() => setShowSearch(false)} className="text-3xl text-muted p-1 -ml-1">‹</button>
+            <h2 className="font-semibold text-ink flex-1">Add to library</h2>
           </div>
           <div className="px-6 pt-4 pb-2 flex-shrink-0">
             <input
@@ -246,35 +246,35 @@ export default function Library() {
               value={query}
               onChange={e => setQuery(e.target.value)}
               placeholder="Search for a book…"
-              className="w-full px-4 py-3 rounded-xl border border-stone-200 bg-white text-stone-900 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-400"
+              className="w-full px-4 py-3 rounded-xl border border-border bg-surface text-ink placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-brand"
             />
           </div>
           <div className="flex-1 overflow-y-auto px-6">
-            {searching && <p className="text-sm text-stone-400 text-center py-6">Searching…</p>}
+            {searching && <p className="text-sm text-subtle text-center py-6">Searching…</p>}
             {!searching && results.map(book => {
               const inLib = inLibraryIds.has(book.external_id)
               return (
-                <div key={book.external_id} className="flex items-center gap-3 py-3 border-b border-stone-100">
+                <div key={book.external_id} className="flex items-center gap-3 py-3 border-b border-border">
                   <button onClick={() => setDetailBook(book)} className="flex-shrink-0">
                     {book.cover_url ? (
                       <img src={book.cover_url} alt="" className="w-10 h-14 object-cover rounded" />
                     ) : (
-                      <div className="w-10 h-14 rounded bg-stone-100" />
+                      <div className="w-10 h-14 rounded bg-canvas" />
                     )}
                   </button>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-stone-900 truncate">{book.title}</p>
-                    {book.author && <p className="text-xs text-stone-500 truncate">{book.author}</p>}
+                    <p className="text-sm font-medium text-ink truncate">{book.title}</p>
+                    {book.author && <p className="text-xs text-muted truncate">{book.author}</p>}
                   </div>
                   {inLib ? (
-                    <span className="text-xs text-stone-400 flex-shrink-0">In library</span>
+                    <span className="text-xs text-subtle flex-shrink-0">In library</span>
                   ) : (
                     <div className="flex flex-col gap-1 flex-shrink-0">
                       {(['favorite','reading','want_to_read'] as Shelf[]).map(s => (
                         <button
                           key={s}
                           onClick={() => addBook(book, s).then(() => inLibraryIds.add(book.external_id))}
-                          className="text-xs px-2.5 py-1 rounded-lg bg-amber-400 text-stone-900 font-medium"
+                          className="text-xs px-2.5 py-1 rounded-lg bg-brand text-ink font-medium"
                         >
                           {SHELF_LABELS[s]}
                         </button>
@@ -295,23 +295,23 @@ export default function Library() {
         <div className="fixed inset-0 z-50 flex items-end" onClick={() => setSelected(null)}>
           <div className="absolute inset-0 bg-black/40" />
           <div
-            className="relative w-full bg-white rounded-t-3xl px-6 pt-5 pb-10 safe-bottom"
+            className="relative w-full bg-surface rounded-t-3xl px-6 pt-5 pb-10 safe-bottom"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center gap-4 mb-5">
               {selected.cover_url ? (
                 <img src={selected.cover_url} alt="" className="w-12 h-16 object-cover rounded-lg flex-shrink-0" />
               ) : (
-                <div className="w-12 h-16 rounded-lg bg-amber-100 flex-shrink-0" />
+                <div className="w-12 h-16 rounded-lg bg-brand-subtle flex-shrink-0" />
               )}
               <div className="min-w-0">
-                <p className="font-semibold text-stone-900 leading-tight">{selected.title}</p>
-                <p className="text-sm text-stone-500">{selected.author}</p>
-                <p className="text-xs text-amber-600 mt-0.5">{SHELF_LABELS[selected.shelf]}</p>
+                <p className="font-semibold text-ink leading-tight">{selected.title}</p>
+                <p className="text-sm text-muted">{selected.author}</p>
+                <p className="text-xs text-brand-ink mt-0.5">{SHELF_LABELS[selected.shelf]}</p>
               </div>
             </div>
             <div className="mb-5">
-              <p className="text-xs font-semibold text-stone-400 uppercase tracking-wide mb-2">Your rating</p>
+              <p className="text-xs font-semibold text-subtle uppercase tracking-wide mb-2">Your rating</p>
               <div className="flex gap-2">
                 {[1, 2, 3, 4, 5].map(star => (
                   <button
@@ -324,14 +324,14 @@ export default function Library() {
                 ))}
               </div>
             </div>
-            <p className="text-xs font-semibold text-stone-400 uppercase tracking-wide mb-3">Move to</p>
+            <p className="text-xs font-semibold text-subtle uppercase tracking-wide mb-3">Move to</p>
             <div className="grid grid-cols-2 gap-2 mb-4">
               {(Object.keys(SHELF_LABELS) as Shelf[]).filter(s => s !== selected.shelf).map(s => (
                 <button
                   key={s}
                   disabled={moving}
                   onClick={() => moveToShelf(selected, s)}
-                  className="py-2.5 rounded-xl border border-stone-200 text-sm font-medium text-stone-700 hover:border-amber-400 transition-colors disabled:opacity-40"
+                  className="py-2.5 rounded-xl border border-border text-sm font-medium text-ink-secondary hover:border-brand transition-colors disabled:opacity-40"
                 >
                   {SHELF_LABELS[s]}
                 </button>
@@ -340,7 +340,7 @@ export default function Library() {
             <button
               disabled={moving}
               onClick={() => removeBook(selected)}
-              className="w-full py-2.5 rounded-xl text-sm font-medium text-red-500 border border-red-100 disabled:opacity-40"
+              className="w-full py-2.5 rounded-xl text-sm font-medium text-destructive border border-destructive-subtle disabled:opacity-40"
             >
               Remove from library
             </button>

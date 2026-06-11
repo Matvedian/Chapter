@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="2200" viewBox="0 0 1440 2200" fill="none">
+  <defs>
+    <style>
+      .display { font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif; font-weight: 700; fill: #1c1917; }
+      .section { font-family: Inter, sans-serif; font-weight: 700; fill: #1c1917; font-size: 22px; }
+      .card-title { font-family: Inter, sans-serif; font-weight: 600; fill: #1c1917; font-size: 16px; }
+      .body { font-family: Inter, sans-serif; font-weight: 400; fill: #44403c; font-size: 14px; }
+      .meta { font-family: Inter, sans-serif; font-weight: 500; fill: #78716c; font-size: 12px; }
+      .label { font-family: Inter, sans-serif; font-weight: 600; fill: #a8a29e; font-size: 11px; letter-spacing: 0.07em; }
+      .p0 { font-family: Inter, sans-serif; font-weight: 700; fill: #b45309; font-size: 11px; }
+      .p1 { font-family: Inter, sans-serif; font-weight: 700; fill: #78716c; font-size: 11px; }
+      .p2 { font-family: Inter, sans-serif; font-weight: 700; fill: #a8a29e; font-size: 11px; }
+    </style>
+    <filter id="card-shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="6" flood-color="#1c1917" flood-opacity="0.07"/>
+    </filter>
+  </defs>
+
+  <rect width="1440" height="2200" fill="#fafaf9"/>
+
+  <!-- Header -->
+  <text x="56" y="64" class="display" font-size="34">Chapter  Product Recommendations</text>
+  <text x="56" y="98" class="meta" font-size="16">Easy-scan chart � Competitive insights (Hinge � Tinder � Bumble � Feeld) � Prioritized moves</text>
+  <rect x="56" y="112" width="96" height="5" rx="2.5" fill="#fbbf24"/>
+
+  <!-- PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP
+       SECTION A  RECOMMENDED NEXT PRODUCT MOVES
+       PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP -->
+  <text x="56" y="168" class="section">Recommended next product moves</text>
+  <text x="56" y="194" class="meta">Ship in priority order  P0 first</text>
+
+  <!-- P0 column header -->
+  <rect x="56" y="216" width="420" height="36" rx="8" fill="#fbbf24"/>
+  <text x="72" y="240" fill="#1c1917" font-family="Inter,sans-serif" font-weight="700" font-size="13">P0  Do now</text>
+
+  <!-- P0 cards -->
+  <g transform="translate(56, 264)">
+    <rect width="420" height="120" rx="14" fill="#ffffff" stroke="#fbbf24" stroke-width="2" filter="url(#card-shadow)"/>
+    <text x="20" y="28" class="p0">P0</text>
+    <text x="48" y="28" class="meta">Inspired by Bumble</text>
+    <text x="20" y="54" class="card-title">"Why verify" screen + verified badge</text>
+    <text x="20" y="78" class="body">Explain Stripe ID before opening browser.</text>
+    <text x="20" y="98" class="body">Show verified badge on swipe cards + chat header.</text>
+  </g>
+
+  <g transform="translate(56, 400)">
+    <rect width="420" height="120" rx="14" fill="#ffffff" stroke="#fbbf24" stroke-width="2" filter="url(#card-shadow)"/>
+    <text x="20" y="28" class="p0">P0</text>
+    <text x="48" y="28" class="meta">Inspired by Hinge</text>
+    <text x="20" y="54" class="card-title">Book-comment / book-like on Discover</text>
+    <text x="20" y="78" class="body">Like a specific favourite book with optional note.</text>
+    <text x="20" y="98" class="body">Prompt-likes convert better than photo-only likes.</text>
+  </g>
+
+  <!-- P1 column -->
+  <rect x="500" y="216" width="420" height="36" rx="8" fill="#fef3c7" stroke="#fbbf24"/>
+  <text x="516" y="240" fill="#92400e" font-family="Inter,sans-serif" font-weight="700" font-size="13">P1  Next quarter</text>
+
+  <g transform="translate(500, 264)">
+    <rect width="420" height="120" rx="14" fill="#ffffff" stroke="#e7e5e4" filter="url(#card-shadow)"/>
+    <text x="20" y="28" class="p1">P1</text>
+    <text x="48" y="28" class="meta">Inspired by Tinder</text>
+    <text x="20" y="54" class="card-title">Taste preview before verify</text>
+    <text x="20" y="78" class="body">Show 13 scored readers after Books step.</text>
+    <text x="20" y="98" class="body">Keep verify gate before chat  reduce pre-verify drop-off.</text>
+  </g>
+
+  <g transform="translate(500, 400)">
+    <rect width="420" height="120" rx="14" fill="#ffffff" stroke="#e7e5e4" filter="url(#card-shadow)"/>
+    <text x="20" y="28" class="p1">P1</text>
+    <text x="48" y="28" class="meta">Inspired by Feeld</text>
+    <text x="20" y="54" class="card-title">"Currently reading" on swipe card</text>
+    <text x="20" y="78" class="body">Surface active shelf on profile + discover card.</text>
+    <text x="20" y="98" class="body">Intent transparency  what they're into right now.</text>
+  </g>
+
+  <!-- P2 column -->
+  <rect x="944" y="216" width="420" height="36" rx="8" fill="#f5f5f4" stroke="#e7e5e4"/>
+  <text x="960" y="240" fill="#57534e" font-family="Inter,sans-serif" font-weight="700" font-size="13">P2  Later</text>
+
+  <g transform="translate(944, 264)">
+    <rect width="420" height="120" rx="14" fill="#ffffff" stroke="#e7e5e4" filter="url(#card-shadow)"/>
+    <text x="20" y="28" class="p2">P2</text>
+    <text x="48" y="28" class="meta">Inspired by Feeld</text>
+    <text x="20" y="54" class="card-title">Reading intent tags</text>
+    <text x="20" y="78" class="body">Book club friend � slow burn � reading buddy.</text>
+    <text x="20" y="98" class="body">Optional: print vs audiobook format prefs.</text>
+  </g>
+
+  <g transform="translate(944, 400)">
+    <rect width="420" height="120" rx="14" fill="#ffffff" stroke="#e7e5e4" filter="url(#card-shadow)"/>
+    <text x="20" y="28" class="p2">P2</text>
+    <text x="48" y="28" class="meta">Inspired by all four</text>
+    <text x="20" y="54" class="card-title">Defer push permission to post-match</text>
+    <text x="20" y="78" class="body">Don't ask on onboarding  ask after first match.</text>
+    <text x="20" y="98" class="body">Hinge/Bumble both push too early; hurts completion.</text>
+  </g>
+
+  <!-- PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP
+       SECTION B  STRATEGIC SUGGESTIONS (7)
+       PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP -->
+  <text x="56" y="580" class="section">Strategic suggestions</text>
+  <text x="56" y="606" class="meta">What to steal, adapt, and double down on</text>
+
+  <!-- Row 1: 3 cards -->
+  <g transform="translate(56, 628)">
+    <rect width="432" height="168" rx="14" fill="#ffffff" stroke="#e7e5e4" filter="url(#card-shadow)"/>
+    <rect x="0" y="0" width="432" height="40" rx="14" fill="#fef3c7"/>
+    <rect x="0" y="28" width="432" height="12" fill="#fef3c7"/>
+    <text x="20" y="26" class="label">01 � SPEED</text>
+    <text x="20" y="66" class="card-title">Tinder: speed-to-magic</text>
+    <text x="20" y="92" class="body">Let users feel value before heavy gates.</text>
+    <text x="20" y="114" class="body">Taste preview or blurred browse pre-verify.</text>
+    <text x="20" y="136" class="meta">Don't go shallow  keep books at the centre.</text>
+  </g>
+
+  <g transform="translate(504, 628)">
+    <rect width="432" height="168" rx="14" fill="#ffffff" stroke="#e7e5e4" filter="url(#card-shadow)"/>
+    <rect x="0" y="0" width="432" height="40" rx="14" fill="#fef3c7"/>
+    <rect x="0" y="28" width="432" height="12" fill="#fef3c7"/>
+    <text x="20" y="26" class="label">02 � CONVERSATION</text>
+    <text x="20" y="66" class="card-title">Hinge: book-native starters</text>
+    <text x="20" y="92" class="body">Reading prompts on profiles.</text>
+    <text x="20" y="114" class="body">"Last book that changed your mind?"</text>
+    <text x="20" y="136" class="meta">Show star ratings on discover cards.</text>
+  </g>
+
+  <g transform="translate(952, 628)">
+    <rect width="432" height="168" rx="14" fill="#ffffff" stroke="#e7e5e4" filter="url(#card-shadow)"/>
+    <rect x="0" y="0" width="432" height="40" rx="14" fill="#fef3c7"/>
+    <rect x="0" y="28" width="432" height="12" fill="#fef3c7"/>
+    <text x="20" y="26" class="label">03 � TRUST</text>
+    <text x="20" y="66" class="card-title">Bumble: soften the Stripe wall</text>
+    <text x="20" y="92" class="body">Stripe is stronger than pose-verify  keep it.</text>
+    <text x="20" y="114" class="body">Add badge + clear "why" copy + calm states.</text>
+    <text x="20" y="136" class="meta">Optional: lighter photo verify later.</text>
+  </g>
+
+  <!-- Row 2: 3 cards -->
+  <g transform="translate(56, 812)">
+    <rect width="432" height="168" rx="14" fill="#ffffff" stroke="#e7e5e4" filter="url(#card-shadow)"/>
+    <rect x="0" y="0" width="432" height="40" rx="14" fill="#fef3c7"/>
+    <rect x="0" y="28" width="432" height="12" fill="#fef3c7"/>
+    <text x="20" y="26" class="label">04 � INTENT</text>
+    <text x="20" y="66" class="card-title">Feeld: reading relationship type</text>
+    <text x="20" y="92" class="body">Beyond gender: what kind of connection?</text>
+    <text x="20" y="114" class="body">Book club � slow burn � reading buddy.</text>
+    <text x="20" y="136" class="meta">Audiobook vs print as filter chips.</text>
+  </g>
+
+  <g transform="translate(504, 812)">
+    <rect width="432" height="168" rx="14" fill="#ffffff" stroke="#e7e5e4" filter="url(#card-shadow)"/>
+    <rect x="0" y="0" width="432" height="40" rx="14" fill="#fef3c7"/>
+    <rect x="0" y="28" width="432" height="12" fill="#fef3c7"/>
+    <text x="20" y="26" class="label">05 � ONBOARDING</text>
+    <text x="20" y="66" class="card-title">Fix friction (learn from Hinge)</text>
+    <text x="20" y="92" class="body">Label every step: "Step 2 of 4  Photos".</text>
+    <text x="20" y="114" class="body">Never drop users mid-flow.</text>
+    <text x="20" y="136" class="meta">Books step = hero � skippable genres OK.</text>
+  </g>
+
+  <g transform="translate(952, 812)">
+    <rect width="432" height="168" rx="14" fill="#ffffff" stroke="#fbbf24" stroke-width="2" filter="url(#card-shadow)"/>
+    <rect x="0" y="0" width="432" height="40" rx="14" fill="#fbbf24"/>
+    <rect x="0" y="28" width="432" height="12" fill="#fbbf24"/>
+    <text x="20" y="26" class="label" fill="#78350f">06 � MOAT</text>
+    <text x="20" y="66" class="card-title">Double down  none have this</text>
+    <text x="20" y="92" class="body">Library tab = living profile.</text>
+    <text x="20" y="114" class="body">Match score on cards � BookDetail everywhere.</text>
+    <text x="20" y="136" class="meta">Market 30-day re-surface as "new chapters".</text>
+  </g>
+
+  <!-- Row 3: 1 wide card -->
+  <g transform="translate(56, 996)">
+    <rect width="1328" height="100" rx="14" fill="#ffffff" stroke="#e7e5e4" filter="url(#card-shadow)"/>
+    <text x="20" y="30" class="label">07 � AVOID</text>
+    <text x="20" y="58" class="card-title">Don't copy blindly</text>
+    <text x="20" y="82" class="body">Skip: Bumble-length onboarding (58 screens) � swipe-only shallow profiles � paywall before value � generic "interests" chips when you have genres + books.</text>
+  </g>
+
+  <!-- PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP
+       SECTION C  COMPETITIVE AT A GLANCE
+       PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP -->
+  <text x="56" y="1144" class="section">Competitive landscape at a glance</text>
+
+  <g transform="translate(56, 1168)">
+    <!-- Table -->
+    <rect width="1328" height="44" rx="10" fill="#1c1917"/>
+    <text x="20" y="30" fill="#fafaf9" font-family="Inter,sans-serif" font-weight="600" font-size="12">App</text>
+    <text x="120" y="30" fill="#fafaf9" font-family="Inter,sans-serif" font-weight="600" font-size="12">Their edge</text>
+    <text x="520" y="30" fill="#fafaf9" font-family="Inter,sans-serif" font-weight="600" font-size="12">Steal this</text>
+    <text x="960" y="30" fill="#fafaf9" font-family="Inter,sans-serif" font-weight="600" font-size="12">Skip this</text>
+
+    <!-- Tinder -->
+    <rect y="44" width="1328" height="56" fill="#ffffff" stroke="#e7e5e4"/>
+    <text x="20" y="78" class="card-title" font-size="14">Tinder</text>
+    <text x="120" y="72" class="body" font-size="13">Speed � swipe gamification</text>
+    <text x="520" y="72" class="body" font-size="13">1 prompt/screen � early swipe tutorial</text>
+    <text x="960" y="72" class="meta" font-size="13">Photo-only shallow profiles</text>
+
+    <!-- Hinge -->
+    <rect y="100" width="1328" height="56" fill="#fafaf9" stroke="#e7e5e4"/>
+    <text x="20" y="134" class="card-title" font-size="14">Hinge</text>
+    <text x="120" y="128" class="body" font-size="13">Depth � prompt comment-likes</text>
+    <text x="520" y="128" class="body" font-size="13">Conversation starters � prompt feedback</text>
+    <text x="960" y="128" class="meta" font-size="13">Unlabeled 10+ step confusion</text>
+
+    <!-- Bumble -->
+    <rect y="156" width="1328" height="56" fill="#ffffff" stroke="#e7e5e4"/>
+    <text x="20" y="190" class="card-title" font-size="14">Bumble</text>
+    <text x="120" y="184" class="body" font-size="13">Safety brand � Opening Moves</text>
+    <text x="520" y="184" class="body" font-size="13">Verified badge � explain-before-verify UX</text>
+    <text x="960" y="184" class="meta" font-size="13">58-screen onboarding length</text>
+
+    <!-- Feeld -->
+    <rect y="212" width="1328" height="56" fill="#fafaf9" stroke="#e7e5e4"/>
+    <text x="20" y="246" class="card-title" font-size="14">Feeld</text>
+    <text x="120" y="240" class="body" font-size="13">Intent transparency � desires</text>
+    <text x="520" y="240" class="body" font-size="13">Reading intent � currently-reading field</text>
+    <text x="960" y="240" class="meta" font-size="13">Niche complexity for MVP scope</text>
+
+    <!-- Chapter -->
+    <rect y="268" width="1328" height="56" fill="#fef3c7" stroke="#fbbf24" stroke-width="2"/>
+    <text x="20" y="302" class="card-title" font-size="14">Chapter</text>
+    <text x="120" y="296" class="body" font-size="13">Books + genres scoring � Library tab</text>
+    <text x="520" y="296" class="body" font-size="13">Own the literary lane  don't become Tinder</text>
+    <text x="960" y="296" class="meta" font-size="13">Competing on photo volume alone</text>
+  </g>
+
+  <!-- PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP
+       SECTION D  QUICK REFERENCE CHEAT SHEET
+       PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP -->
+  <text x="56" y="1500" class="section">Quick reference cheat sheet</text>
+
+  <g transform="translate(56, 1524)">
+    <rect width="640" height="280" rx="14" fill="#1c1917" filter="url(#card-shadow)"/>
+    <text x="24" y="36" class="label" fill="#a8a29e">SHIP FIRST (P0)</text>
+    <circle cx="32" cy="62" r="4" fill="#fbbf24"/>
+    <text x="48" y="66" fill="#fafaf9" font-family="Inter,sans-serif" font-size="14">Verify explainer screen before Stripe browser</text>
+    <circle cx="32" cy="92" r="4" fill="#fbbf24"/>
+    <text x="48" y="96" fill="#fafaf9" font-family="Inter,sans-serif" font-size="14">Verified badge on cards + chat</text>
+    <circle cx="32" cy="122" r="4" fill="#fbbf24"/>
+    <text x="48" y="126" fill="#fafaf9" font-family="Inter,sans-serif" font-size="14">Book-like with optional comment on Discover</text>
+    <text x="24" y="168" class="label" fill="#a8a29e">THEN (P1)</text>
+    <circle cx="32" cy="194" r="4" fill="#fef3c7"/>
+    <text x="48" y="198" fill="#e7e5e4" font-family="Inter,sans-serif" font-size="14">Taste preview after onboarding books step</text>
+    <circle cx="32" cy="224" r="4" fill="#fef3c7"/>
+    <text x="48" y="228" fill="#e7e5e4" font-family="Inter,sans-serif" font-size="14">"Currently reading" on swipe card</text>
+    <text x="24" y="260" class="label" fill="#a8a29e">LATER (P2)</text>
+    <text x="24" y="280" fill="#a8a29e" font-family="Inter,sans-serif" font-size="13">Intent tags � deferred push � audiobook filters</text>
+  </g>
+
+  <g transform="translate(720, 1524)">
+    <rect width="664" height="280" rx="14" fill="#ffffff" stroke="#e7e5e4" filter="url(#card-shadow)"/>
+    <text x="24" y="36" class="label">CHAPTER WINS IF&</text>
+    <text x="24" y="66" class="body"> Match quality beats match quantity</text>
+    <text x="24" y="92" class="body"> First message starts from a shared book</text>
+    <text x="24" y="118" class="body"> Library stays fresh � better get_candidates scores</text>
+    <text x="24" y="144" class="body"> Verify feels like safety, not bureaucracy</text>
+    <text x="24" y="170" class="body"> Onboarding ends with anticipation, not exhaustion</text>
+    <line x1="24" y1="190" x2="640" y2="190" stroke="#e7e5e4"/>
+    <text x="24" y="216" class="label">CHAPTER LOSES IF&</text>
+    <text x="24" y="246" class="body"> Becomes another photo-swipe app with books bolted on</text>
+    <text x="24" y="272" class="body"> Verify gate kills users before they see taste matches</text>
+  </g>
+
+  <!-- Footer -->
+  <text x="56" y="1860" class="meta">Drag into Figma � design/figma/chapter-product-recommendations.svg � Chapter MVP � June 2026</text>
+  <text x="56" y="1884" class="meta">Pairs with: chapter-user-journey-flowchart.svg � chapter-user-journey.fig</text>
+
+</svg>
