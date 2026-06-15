@@ -110,6 +110,26 @@ export default function DiscoverCard({
           </p>
         )}
 
+        {candidate.reading.length > 0 && (
+          <div className="mb-3">
+            <p className="text-[10px] font-semibold text-subtle uppercase tracking-wide mb-1.5">Reading now</p>
+            <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-1 px-1">
+              {candidate.reading.slice(0, 3).map(book => (
+                <div key={book.book_id} className="flex items-center gap-2 p-2 rounded-lg bg-canvas border border-border flex-shrink-0 min-w-[140px] max-w-[180px]">
+                  {book.cover_url ? (
+                    <img src={book.cover_url} alt="" className="w-8 h-11 object-cover rounded flex-shrink-0" />
+                  ) : (
+                    <div className="w-8 h-11 rounded bg-brand-subtle flex-shrink-0" />
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-medium text-ink line-clamp-2 leading-tight">{book.title}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {displayBooks.length > 0 ? (
           <div className="flex gap-2 overflow-x-auto no-scrollbar mb-3 -mx-1 px-1">
             {displayBooks.map(book => (

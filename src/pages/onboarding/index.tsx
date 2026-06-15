@@ -91,14 +91,15 @@ export default function Onboarding() {
         await supabase.from('user_books').insert({
           user_id: user.id,
           book_id: bookRow.id,
-          shelf: 'favorite',
+          shelf: 'read',
+          is_favorite: true,
         })
       }
     }
 
     await fetchProfile(user.id)
     setSubmitting(false)
-    navigate('/', { replace: true })
+    navigate('/taste-preview', { replace: true })
   }
 
   return (

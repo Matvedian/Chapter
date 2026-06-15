@@ -10,6 +10,7 @@ import DiscoverCard from '../components/discover/DiscoverCard'
 import VerifiedBadge from '../components/VerifiedBadge'
 import BottomNav from '../components/BottomNav'
 import { Button } from '../components/ui'
+import { loadDiscoverCandidates } from '../lib/candidates'
 import type { CandidateBook, DiscoverCandidate } from '../types/discover'
 
 interface ProfileModal {
@@ -154,85 +155,10 @@ export default function Discover() {
     setLoading(true)
     setFetchError(false)
 
-    const { data: rpcData, error: rpcError } = await supabase.rpc('get_candidates', { p_user_id: user.id })
-    if (rpcError) { setFetchError(true); setLoading(false); return }
-    if (!rpcData?.length) { setLoading(false); return }
+    const { candidates, error } = await loadDiscoverCandidates(user.id)
+    if (error) { setFetchError(true); setLoading(false); return }
 
-    const rows = rpcData as { profile_id: string; score: number; shared_books?: number; shared_genres?: number }[]
-    const ids = rows.map(r => r.profile_id)
-    const metaMap = Object.fromEntries(rows.map(r => [r.profile_id, r]))
-
-    const [
-      { data: profiles, error: profilesError },
-      { data: ubRows },
-      { data: ugRows },
-      { data: myBooks },
-    ] = await Promise.all([
-      supabase.from('profiles').select('id, name, birth_date, photos, gender, bio, identity_verified').in('id', ids),
-      supabase.from('user_books').select('user_id, book_id, books(id, title, author, cover_url, source, external_id)').in('user_id', ids).eq('shelf', 'favorite'),
-      supabase.from('user_genres').select('user_id, genres(name)').in('user_id', ids),
-      supabase.from('user_books').select('book_id').eq('user_id', user.id),
-    ])
-
-    if (profilesError) { setFetchError(true); setLoading(false); return }
-    if (!profiles?.length) { setLoading(false); return }
-
-    const myBookIds = new Set((myBooks ?? []).map(r => r.book_id))
-
-    const booksByUser = new Map<string, CandidateBook[]>()
-    for (const row of ubRows ?? []) {
-      const r = row as unknown as { user_id: string; book_id: string; books: { id: string; title: string; author: string; cover_url: string | null; source: string; external_id: string } | null }
-      const b = r.books
-      if (!b) continue
-      const list = booksByUser.get(r.user_id) ?? []
-      list.push({
-        book_id: b.id,
-        title: b.title,
-        author: b.author,
-        cover_url: b.cover_url,
-        source: b.source,
-        external_id: b.external_id,
-        shared: myBookIds.has(b.id),
-      })
-      booksByUser.set(r.user_id, list)
-    }
-
-    const genresByUser = new Map<string, string[]>()
-    for (const row of ugRows ?? []) {
-      const r = row as unknown as { user_id: string; genres: { name: string } | null }
-      const name = r.genres?.name
-      if (!name) continue
-      const list = genresByUser.get(r.user_id) ?? []
-      list.push(name)
-      genresByUser.set(r.user_id, list)
-    }
-
-    const profileMap = Object.fromEntries(profiles.map(p => [p.id, p]))
-    const enriched: DiscoverCandidate[] = ids
-      .map(id => {
-        const p = profileMap[id]
-        const meta = metaMap[id]
-        if (!p) return null
-        const sharedBooks = meta?.shared_books ?? Math.floor((meta?.score ?? 0) / 3)
-        const sharedGenres = meta?.shared_genres ?? (meta?.score ?? 0) % 3
-        return {
-          id: p.id,
-          name: p.name,
-          birth_date: p.birth_date,
-          photos: p.photos ?? [],
-          score: meta?.score ?? 0,
-          sharedBooks,
-          sharedGenres,
-          gender: p.gender ?? null,
-          bio: p.bio ?? null,
-          identity_verified: p.identity_verified ?? false,
-          books: booksByUser.get(id) ?? [],
-          genres: genresByUser.get(id) ?? [],
-        }
-      })
-      .filter((c): c is DiscoverCandidate => c !== null)
-
-    setAllCandidates(enriched)
+    setAllCandidates(candidates)
     setLoading(false)
   }, [user?.id])
 
@@ -346,7 +272,7 @@ export default function Discover() {
     setProfileModal({ candidate, genres: [], books: [], loadingExtra: true, photoIndex: 0 })
     const [{ data: ugData }, { data: ubData }] = await Promise.all([
       supabase.from('user_genres').select('genres(name)').eq('user_id', candidate.id),
-      supabase.from('user_books').select('rating, books(title, author, cover_url, source, external_id)').eq('user_id', candidate.id).eq('shelf', 'favorite'),
+      supabase.from('user_books').select('rating, books(title, author, cover_url, source, external_id)').eq('user_id', candidate.id).eq('is_favorite', true),
     ])
     if (profileLoadRef.current !== candidate.id) return
     setProfileModal(prev => prev ? {
@@ -366,7 +292,7 @@ export default function Discover() {
           <div className="w-8" />
         </div>
         <div className="flex-1 flex items-center justify-center overflow-hidden">
-          <div className="rounded-card skeleton" style={{ width: 320, height: 520 }} />
+          <div className="rounded-card skeleton" style={{ width: 320, height: 540 }} />
         </div>
         <div className="flex-shrink-0 flex justify-center gap-8 py-5">
           <div className="w-16 h-16 rounded-full skeleton" />
@@ -432,7 +358,7 @@ export default function Discover() {
             </div>
           )
         ) : (
-          <div className="relative" style={{ width: 320, height: 520 }}>
+          <div className="relative" style={{ width: 320, height: 540 }}>
             {candidates.map((candidate, index) => {
               if (index < currentIndex - 1 || index > currentIndex) return null
               const isTop = index === currentIndex
@@ -590,6 +516,27 @@ export default function Discover() {
 
               {profileModal.candidate.bio && (
                 <p className="text-ink-secondary text-sm leading-relaxed">{profileModal.candidate.bio}</p>
+              )}
+
+              {profileModal.candidate.reading.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-subtle uppercase tracking-wide mb-2">Reading now</p>
+                  <div className="space-y-2">
+                    {profileModal.candidate.reading.map(book => (
+                      <div key={book.book_id} className="flex items-center gap-3 p-3 rounded-card bg-canvas border border-border">
+                        {book.cover_url ? (
+                          <img src={book.cover_url} alt="" className="w-10 h-14 object-cover rounded shadow flex-shrink-0" />
+                        ) : (
+                          <div className="w-10 h-14 bg-brand-subtle rounded shadow flex-shrink-0" />
+                        )}
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-ink">{book.title}</p>
+                          {book.author && <p className="text-xs text-muted">{book.author}</p>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
 
               {profileModal.loadingExtra ? (

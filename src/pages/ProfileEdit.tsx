@@ -160,7 +160,7 @@ export default function ProfileEdit() {
       .from('user_books')
       .select('id, books(source, external_id, title, author, cover_url)')
       .eq('user_id', user.id)
-      .eq('shelf', 'favorite')
+      .eq('is_favorite', true)
       .then(({ data }) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const rows = (data ?? []) as any[]
@@ -269,13 +269,13 @@ export default function ProfileEdit() {
     const selectedIds = new Set(selectedBooks.map(b => b.external_id))
     const originalIdSet = new Set(originalBooks.map(b => b.external_id))
 
-    // Delete only removed books (preserves ratings on other shelves; ratings on removed favorites are intentionally discarded)
+    // Un-favourite removed books (keep them in library, just clear the flag)
     const removedUserBookIds = originalBooks.filter(b => !selectedIds.has(b.external_id)).map(b => b.userBookId)
     if (removedUserBookIds.length > 0) {
-      await supabase.from('user_books').delete().in('id', removedUserBookIds)
+      await supabase.from('user_books').update({ is_favorite: false }).in('id', removedUserBookIds)
     }
 
-    // Upsert only newly added books — existing ones (with their ratings) are left untouched
+    // For newly added favourites: if already in library set is_favorite=true, otherwise insert with shelf='read'
     const toAdd = selectedBooks.filter(b => !originalIdSet.has(b.external_id))
     let allAdded = true
     for (const book of toAdd) {
@@ -288,10 +288,14 @@ export default function ProfileEdit() {
         .select('id')
         .single()
       if (!bookRow) { allAdded = false; continue }
-      await supabase.from('user_books').upsert(
-        { user_id: user.id, book_id: bookRow.id, shelf: 'favorite' },
-        { onConflict: 'user_id,book_id' }
-      )
+      const { data: updated } = await supabase.from('user_books')
+        .update({ is_favorite: true })
+        .eq('user_id', user.id)
+        .eq('book_id', bookRow.id)
+        .select('id')
+      if (!updated?.length) {
+        await supabase.from('user_books').insert({ user_id: user.id, book_id: bookRow.id, shelf: 'read', is_favorite: true })
+      }
     }
 
     // Refresh to sync new userBookIds into originalBooks state
@@ -299,7 +303,7 @@ export default function ProfileEdit() {
       .from('user_books')
       .select('id, books(external_id)')
       .eq('user_id', user.id)
-      .eq('shelf', 'favorite')
+      .eq('is_favorite', true)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     setOriginalBooks((refreshed ?? []).map((r: any) => ({ userBookId: r.id as string, external_id: r.books.external_id as string })))
 

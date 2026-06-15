@@ -31,7 +31,13 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     return <Navigate to="/onboarding" replace />
   }
 
-  if (profile && profile.onboarding_complete && !profile.identity_verified && location.pathname !== '/verify') {
+  const preVerifyPaths = ['/verify', '/taste-preview']
+  if (
+    profile
+    && profile.onboarding_complete
+    && !profile.identity_verified
+    && !preVerifyPaths.includes(location.pathname)
+  ) {
     return <Navigate to="/verify" replace />
   }
 

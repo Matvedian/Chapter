@@ -7,12 +7,14 @@ import BottomNav from '../components/BottomNav'
 import BookDetailModal from '../components/BookDetailModal'
 import type { DetailBook } from '../components/BookDetailModal'
 
-type Shelf = 'favorite' | 'reading' | 'read' | 'want_to_read'
+type Shelf = 'reading' | 'read' | 'want_to_read'
+type ActiveFilter = Shelf | 'all' | 'favorite'
 
 interface LibraryBook {
   userBookId: string
   bookId: string
   shelf: Shelf
+  isFavorite: boolean
   rating: number | null
   title: string
   author: string
@@ -21,7 +23,7 @@ interface LibraryBook {
   external_id: string
 }
 
-const SHELVES: { key: Shelf | 'all'; label: string }[] = [
+const SHELVES: { key: ActiveFilter; label: string }[] = [
   { key: 'all',          label: 'All' },
   { key: 'favorite',     label: 'Favourites' },
   { key: 'reading',      label: 'Reading' },
@@ -30,7 +32,6 @@ const SHELVES: { key: Shelf | 'all'; label: string }[] = [
 ]
 
 const SHELF_LABELS: Record<Shelf, string> = {
-  favorite:     'Favourite',
   reading:      'Reading',
   read:         'Read',
   want_to_read: 'Want to read',
@@ -50,7 +51,7 @@ export default function Library() {
   const { user } = useAuthStore()
   const [books, setBooks] = useState<LibraryBook[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeShelf, setActiveShelf] = useState<Shelf | 'all'>('all')
+  const [activeShelf, setActiveShelf] = useState<ActiveFilter>('all')
 
   // Search / add panel
   const [showSearch, setShowSearch] = useState(false)
@@ -69,7 +70,7 @@ export default function Library() {
     setLoading(true)
     const { data } = await supabase
       .from('user_books')
-      .select('id, shelf, rating, books(id, title, author, cover_url, source, external_id)')
+      .select('id, shelf, is_favorite, rating, books(id, title, author, cover_url, source, external_id)')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
 
@@ -78,6 +79,7 @@ export default function Library() {
       userBookId: r.id,
       bookId: r.books.id,
       shelf: r.shelf as Shelf,
+      isFavorite: r.is_favorite ?? false,
       rating: r.rating ?? null,
       title: r.books.title,
       author: r.books.author,
@@ -115,18 +117,26 @@ export default function Library() {
       .single()
     if (!bookRow) return
     await supabase.from('user_books').upsert(
-      { user_id: user.id, book_id: bookRow.id, shelf },
+      { user_id: user.id, book_id: bookRow.id, shelf, is_favorite: false },
       { onConflict: 'user_id,book_id' }
     )
     await load()
   }
 
   const moveToShelf = async (book: LibraryBook, shelf: Shelf) => {
+    if (shelf === book.shelf) return
     setMoving(true)
     await supabase.from('user_books').update({ shelf }).eq('id', book.userBookId)
     setMoving(false)
-    setSelected(null)
     setBooks(prev => prev.map(b => b.userBookId === book.userBookId ? { ...b, shelf } : b))
+    setSelected(prev => prev?.userBookId === book.userBookId ? { ...prev, shelf } : prev)
+  }
+
+  const toggleFavourite = async (book: LibraryBook) => {
+    const newVal = !book.isFavorite
+    await supabase.from('user_books').update({ is_favorite: newVal }).eq('id', book.userBookId)
+    setBooks(prev => prev.map(b => b.userBookId === book.userBookId ? { ...b, isFavorite: newVal } : b))
+    setSelected(prev => prev?.userBookId === book.userBookId ? { ...prev, isFavorite: newVal } : prev)
   }
 
   const rateBook = async (book: LibraryBook, rating: number) => {
@@ -144,7 +154,14 @@ export default function Library() {
     setBooks(prev => prev.filter(b => b.userBookId !== book.userBookId))
   }
 
-  const visible = activeShelf === 'all' ? books : books.filter(b => b.shelf === activeShelf)
+  const shelfCount = (key: ActiveFilter) =>
+    key === 'favorite' ? books.filter(b => b.isFavorite).length : books.filter(b => b.shelf === key).length
+
+  const visible =
+    activeShelf === 'all' ? books :
+    activeShelf === 'favorite' ? books.filter(b => b.isFavorite) :
+    books.filter(b => b.shelf === activeShelf)
+
   const inLibraryIds = new Set(books.map(b => b.external_id))
 
   return (
@@ -175,9 +192,7 @@ export default function Library() {
           >
             {s.label}
             {s.key !== 'all' && (
-              <span className="ml-1.5 text-xs opacity-60">
-                {books.filter(b => b.shelf === s.key).length}
-              </span>
+              <span className="ml-1.5 text-xs opacity-60">{shelfCount(s.key)}</span>
             )}
           </button>
         ))}
@@ -193,7 +208,7 @@ export default function Library() {
           <div className="text-center pt-16">
             <p className="text-4xl mb-3">📚</p>
             <h2 className="text-lg font-bold text-ink">
-              {activeShelf === 'all' ? 'Your library is empty' : `No books here yet`}
+              {activeShelf === 'all' ? 'Your library is empty' : 'No books here yet'}
             </h2>
             <p className="text-muted text-sm mt-1">Tap + to add your first book.</p>
           </div>
@@ -202,8 +217,8 @@ export default function Library() {
             {visible.map(book => (
               <div key={book.userBookId} className="flex flex-col gap-1.5">
                 <button
-                  onClick={() => setDetailBook(book)}
-                  className="w-full"
+                  onClick={() => setSelected(book)}
+                  className="w-full relative"
                 >
                   {book.cover_url ? (
                     <img
@@ -216,6 +231,18 @@ export default function Library() {
                       {book.title.slice(0, 30)}
                     </div>
                   )}
+                  {/* Shelf + favourite badge */}
+                  <span className="absolute bottom-1.5 left-1.5 bg-black/60 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-md leading-none">
+                    {book.isFavorite ? '★ ' : ''}{SHELF_LABELS[book.shelf]}
+                  </span>
+                  {/* Info button */}
+                  <span
+                    role="button"
+                    onClick={e => { e.stopPropagation(); setDetailBook(book) }}
+                    className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/50 flex items-center justify-center text-white text-xs font-bold leading-none"
+                  >
+                    i
+                  </span>
                 </button>
                 <button onClick={() => setSelected(book)} className="text-left">
                   <p className="text-xs font-medium text-ink leading-tight line-clamp-2">{book.title}</p>
@@ -270,7 +297,7 @@ export default function Library() {
                     <span className="text-xs text-subtle flex-shrink-0">In library</span>
                   ) : (
                     <div className="flex flex-col gap-1 flex-shrink-0">
-                      {(['favorite','reading','want_to_read'] as Shelf[]).map(s => (
+                      {(['reading', 'read', 'want_to_read'] as Shelf[]).map(s => (
                         <button
                           key={s}
                           onClick={() => addBook(book, s).then(() => inLibraryIds.add(book.external_id))}
@@ -298,45 +325,59 @@ export default function Library() {
             className="relative w-full bg-surface rounded-t-3xl px-6 pt-5 pb-10 safe-bottom"
             onClick={e => e.stopPropagation()}
           >
+            {/* Book header + favourite toggle */}
             <div className="flex items-center gap-4 mb-5">
               {selected.cover_url ? (
                 <img src={selected.cover_url} alt="" className="w-12 h-16 object-cover rounded-lg flex-shrink-0" />
               ) : (
                 <div className="w-12 h-16 rounded-lg bg-brand-subtle flex-shrink-0" />
               )}
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <p className="font-semibold text-ink leading-tight">{selected.title}</p>
                 <p className="text-sm text-muted">{selected.author}</p>
-                <p className="text-xs text-brand-ink mt-0.5">{SHELF_LABELS[selected.shelf]}</p>
               </div>
+              <button
+                onClick={() => toggleFavourite(selected)}
+                className={`text-3xl flex-shrink-0 transition-opacity ${selected.isFavorite ? 'opacity-100' : 'opacity-20'}`}
+                title={selected.isFavorite ? 'Remove from favourites' : 'Mark as favourite'}
+              >
+                ★
+              </button>
             </div>
-            <div className="mb-5">
-              <p className="text-xs font-semibold text-subtle uppercase tracking-wide mb-2">Your rating</p>
-              <div className="flex gap-2">
-                {[1, 2, 3, 4, 5].map(star => (
-                  <button
-                    key={star}
-                    onClick={() => rateBook(selected, star)}
-                    className={`text-2xl transition-opacity ${star <= (selected.rating ?? 0) ? 'opacity-100' : 'opacity-25'}`}
-                  >
-                    ★
-                  </button>
-                ))}
-              </div>
-            </div>
-            <p className="text-xs font-semibold text-subtle uppercase tracking-wide mb-3">Move to</p>
-            <div className="grid grid-cols-2 gap-2 mb-4">
-              {(Object.keys(SHELF_LABELS) as Shelf[]).filter(s => s !== selected.shelf).map(s => (
+
+            {/* Reading status */}
+            <p className="text-xs font-semibold text-subtle uppercase tracking-wide mb-3">Reading status</p>
+            <div className="grid grid-cols-3 gap-2 mb-5">
+              {(['reading', 'read', 'want_to_read'] as Shelf[]).map(s => (
                 <button
                   key={s}
                   disabled={moving}
                   onClick={() => moveToShelf(selected, s)}
-                  className="py-2.5 rounded-xl border border-border text-sm font-medium text-ink-secondary hover:border-brand transition-colors disabled:opacity-40"
+                  className={`py-2.5 rounded-xl border text-sm font-medium transition-colors disabled:opacity-40 ${
+                    selected.shelf === s
+                      ? 'bg-brand border-brand text-ink'
+                      : 'border-border text-ink-secondary'
+                  }`}
                 >
                   {SHELF_LABELS[s]}
                 </button>
               ))}
             </div>
+
+            {/* Rating */}
+            <p className="text-xs font-semibold text-subtle uppercase tracking-wide mb-2">Your rating</p>
+            <div className="flex gap-2 mb-5">
+              {[1, 2, 3, 4, 5].map(star => (
+                <button
+                  key={star}
+                  onClick={() => rateBook(selected, star)}
+                  className={`text-2xl transition-opacity ${star <= (selected.rating ?? 0) ? 'opacity-100' : 'opacity-25'}`}
+                >
+                  ★
+                </button>
+              ))}
+            </div>
+
             <button
               disabled={moving}
               onClick={() => removeBook(selected)}

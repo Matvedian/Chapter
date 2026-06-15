@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useCallback, useEffect, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 // SPOTIFY STANDBY: import { Browser } from '@capacitor/browser'
 import { useAuthStore } from '../store/auth'
 import { useProfileStore } from '../store/profile'
@@ -26,6 +26,7 @@ export default function Profile() {
   const { signOut, user } = useAuthStore()
   const { profile, fetch: fetchProfile } = useProfileStore()
   const navigate = useNavigate()
+  const location = useLocation()
 
   // SPOTIFY STANDBY: const [spotify, setSpotify] = useState<SpotifyConnection | null>(null)
   // SPOTIFY STANDBY: const [spotifyLoading, setSpotifyLoading] = useState(true)
@@ -37,6 +38,24 @@ export default function Profile() {
 
   const [deleteState, setDeleteState] = useState<DeleteState>('idle')
   const [deleteError, setDeleteError] = useState('')
+  const [readingBooks, setReadingBooks] = useState<{ title: string; author: string; cover_url: string | null }[]>([])
+
+  const loadReadingBooks = useCallback(async () => {
+    if (!user) return
+    const { data } = await supabase
+      .from('user_books')
+      .select('books(title, author, cover_url)')
+      .eq('user_id', user.id)
+      .eq('shelf', 'reading')
+    const books = (data ?? [])
+      .map(row => (row as unknown as { books: { title: string; author: string; cover_url: string | null } | null }).books)
+      .filter((b): b is { title: string; author: string; cover_url: string | null } => b !== null)
+    setReadingBooks(books)
+  }, [user?.id])
+
+  useEffect(() => {
+    loadReadingBooks()
+  }, [loadReadingBooks, location.key])
 
   const photo = profile?.photos?.[0] ?? null
   const age = profile?.birth_date ? getAge(profile.birth_date) : null
@@ -147,6 +166,32 @@ export default function Profile() {
           )}
           {profile?.bio && (
             <p className="text-ink-secondary text-sm mt-3 text-center leading-relaxed">{profile.bio}</p>
+          )}
+          {readingBooks.length > 0 && (
+            <div className="mt-4 w-full">
+              <p className="text-xs font-semibold text-subtle uppercase tracking-wide mb-2 text-left">
+                Reading now
+              </p>
+              <div className="space-y-2">
+                {readingBooks.map((book, i) => (
+                  <button
+                    key={`${book.title}-${i}`}
+                    onClick={() => navigate('/library')}
+                    className="w-full flex items-center gap-3 p-3 rounded-card bg-surface border border-border text-left"
+                  >
+                    {book.cover_url ? (
+                      <img src={book.cover_url} alt="" className="w-10 h-14 object-cover rounded shadow flex-shrink-0" />
+                    ) : (
+                      <div className="w-10 h-14 bg-brand-subtle rounded shadow flex-shrink-0" />
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-ink truncate">{book.title}</p>
+                      {book.author && <p className="text-xs text-muted truncate">{book.author}</p>}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
         </div>
 

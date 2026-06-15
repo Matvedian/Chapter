@@ -14,6 +14,7 @@ import Profile from './pages/Profile'
 import ProfileEdit from './pages/ProfileEdit'
 import Library from './pages/Library'
 import Verify from './pages/Verify'
+import TastePreview from './pages/TastePreview'
 
 function AppInner() {
   useSpotifyCallback()
@@ -32,6 +33,7 @@ export default function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/onboarding" element={<AuthGuard><Onboarding /></AuthGuard>} />
         <Route path="/verify" element={<AuthGuard><Verify /></AuthGuard>} />
+        <Route path="/taste-preview" element={<AuthGuard><TastePreview /></AuthGuard>} />
         <Route path="/" element={<AuthGuard><Discover /></AuthGuard>} />
         <Route path="/matches" element={<AuthGuard><Matches /></AuthGuard>} />
         <Route path="/chat/:matchId" element={<AuthGuard><Chat /></AuthGuard>} />

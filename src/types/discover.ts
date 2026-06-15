@@ -21,4 +21,5 @@ export interface DiscoverCandidate {
   identity_verified: boolean
   books: CandidateBook[]
   genres: string[]
+  reading: CandidateBook[]
 }
