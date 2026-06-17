@@ -6,8 +6,8 @@ interface AuthState {
   session: Session | null
   user: User | null
   loading: boolean
-  signIn: (email: string, password: string) => Promise<string | null>
-  signUp: (email: string, password: string) => Promise<{ error: string | null; needsConfirmation: boolean }>
+  requestOtp: (phone: string) => Promise<string | null>
+  verifyOtp: (phone: string, token: string) => Promise<string | null>
   signOut: () => Promise<void>
   initialize: () => () => void
 }
@@ -17,15 +17,14 @@ export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   loading: true,
 
-  signIn: async (email, password) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+  requestOtp: async (phone) => {
+    const { error } = await supabase.auth.signInWithOtp({ phone })
     return error?.message ?? null
   },
 
-  signUp: async (email, password) => {
-    const { data, error } = await supabase.auth.signUp({ email, password })
-    if (error) return { error: error.message, needsConfirmation: false }
-    return { error: null, needsConfirmation: !data.session }
+  verifyOtp: async (phone, token) => {
+    const { error } = await supabase.auth.verifyOtp({ phone, token, type: 'sms' })
+    return error?.message ?? null
   },
 
   signOut: async () => {

@@ -4,8 +4,7 @@ import NotificationListener from './components/NotificationListener'
 import OfflineBanner from './components/OfflineBanner'
 import ToastBanner from './components/ToastBanner'
 import { useSpotifyCallback } from './hooks/useSpotifyCallback'
-import Login from './pages/Login'
-import Register from './pages/Register'
+import PhoneAuth from './pages/PhoneAuth'
 import Onboarding from './pages/onboarding'
 import Discover from './pages/Discover'
 import Matches from './pages/Matches'
@@ -29,8 +28,9 @@ export default function App() {
       <OfflineBanner />
       <ToastBanner />
       <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+        <Route path="/auth" element={<PhoneAuth />} />
+        <Route path="/login" element={<Navigate to="/auth" replace />} />
+        <Route path="/register" element={<Navigate to="/auth" replace />} />
         <Route path="/onboarding" element={<AuthGuard><Onboarding /></AuthGuard>} />
         <Route path="/verify" element={<AuthGuard><Verify /></AuthGuard>} />
         <Route path="/taste-preview" element={<AuthGuard><TastePreview /></AuthGuard>} />

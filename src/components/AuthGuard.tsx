@@ -25,7 +25,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     )
   }
 
-  if (!session) return <Navigate to="/login" replace />
+  if (!session) return <Navigate to="/auth" replace />
 
   if (profile && !profile.onboarding_complete && location.pathname !== '/onboarding') {
     return <Navigate to="/onboarding" replace />
