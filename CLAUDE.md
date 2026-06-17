@@ -37,7 +37,7 @@ All tables have RLS enabled.
 
 | Table | Purpose |
 |---|---|
-| `profiles` | Extends `auth.users`. Columns: `name`, `birth_date`, `photos text[]`, `gender`, `looking_for text[]`, `onboarding_complete`, `bio text`, `push_token text`, `identity_verified boolean` (default false), `stripe_verification_session_id text`, `paused boolean` (default false) |
+| `profiles` | Extends `auth.users`. Columns: `username text UNIQUE NOT NULL` (auto-set by trigger, not shown in UI), `display_name text` (auto-set by trigger), `name`, `birth_date`, `photos text[]`, `gender`, `looking_for text[]`, `onboarding_complete`, `bio text`, `push_token text`, `identity_verified boolean` (default false), `stripe_verification_session_id text`, `paused boolean` (default false). Row auto-created by `handle_new_user` trigger on `auth.users` insert — uses phone-derived fallback username for OTP signups (email is NULL). |
 | `genres` | Lookup table, 20 genres, public read |
 | `user_genres` | User ↔ genre join table |
 | `books` | Cached from Google Books / Open Library. `(source, external_id)` is unique. `source` defaults to `'open_library'`. |
@@ -89,7 +89,7 @@ supabase.rpc('get_candidates', { p_user_id: user.id })
 ## Implementation status
 
 - **Phase 1:** Complete — scaffold, deps, Capacitor, Supabase connected, DB migrated.
-- **Phase 2:** Complete — Supabase email/password auth, `AuthGuard`, Zustand session persistence.
+- **Phase 2:** Complete — Supabase phone OTP auth (replaces email/password). `src/pages/PhoneAuth.tsx` handles both sign-up and sign-in in a two-step flow: country code select + phone input → 6-digit SMS code. Auth store exposes `requestOtp(phone)` and `verifyOtp(phone, token)`. `/auth` is the public route; `/login` and `/register` redirect to it. `AuthGuard` redirects unauthenticated users to `/auth`. Requires Supabase Phone provider + Twilio configured in the dashboard. Migration `fix_handle_new_user_for_phone_auth` updates the `handle_new_user` trigger to generate a fallback username for phone-only users (email is NULL for OTP signups).
 - **Phase 3:** Complete — 4-step onboarding (`src/pages/onboarding/`): Info (name/dob/gender/looking_for), Photos upload, Genres (min 3, skippable), Books via Open Library (min 1, skippable). Under-18 users are blocked at the Info step with an error message.
 - **Phase 4:** Complete — `Discover.tsx` swipe stack with `react-tinder-card`, swipes recorded, mutual match detection + modal.
 - **Phase 5:** Complete — `Matches.tsx` (last-message preview, unread dot, sorted by activity), `Chat.tsx` (Realtime, auto-scroll, send on Enter), `Profile.tsx` (own profile + sign out), `BottomNav` across Discover/Matches/Profile.
