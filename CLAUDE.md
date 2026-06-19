@@ -41,7 +41,7 @@ All tables have RLS enabled.
 | `genres` | Lookup table, 20 genres, public read |
 | `user_genres` | User ↔ genre join table |
 | `books` | Cached from Google Books / Open Library. `(source, external_id)` is unique. `source` defaults to `'open_library'`. |
-| `user_books` | User ↔ book with `shelf` enum (`reading`, `read`, `want_to_read`, `favorite`) and optional `rating`. Unique on `(user_id, book_id)`. |
+| `user_books` | User ↔ book with `shelf` enum (`reading`, `read`, `want_to_read`, `favorite`), optional `rating` (1–5), and optional `review text`. Unique on `(user_id, book_id)`. |
 | `swipes` | `swiper_id`, `swiped_id`, `direction` (`like`\|`pass`). Unique on `(swiper_id, swiped_id)`. |
 | `matches` | Auto-created by trigger `on_mutual_like` on mutual like. |
 | `messages` | `match_id`, `sender_id`, `content`. Used for Realtime chat. |
@@ -117,3 +117,5 @@ supabase.rpc('get_candidates', { p_user_id: user.id })
 - **Photo reordering + set-as-profile-photo (2026-06-09):** `@dnd-kit/core` + `@dnd-kit/sortable` added. Photo grid in `ProfileEdit.tsx` is now drag-to-reorder. `SortablePhoto` component handles each filled slot. Non-first photos show a ★ button (bottom-left) that calls `arrayMove(prev, i, 0)` to set that photo as the profile photo; first photo shows a "Profile" badge instead. Order is persisted on "Save photos".
 - **Author search (2026-06-09):** `searchGoogleBooks` runs two parallel fetches and merges `byAuthor` results first so searching an author name surfaces their books at the top.
 - **Book description popup (2026-06-09):** `BookDetailModal` component — tap any book cover anywhere to see a short description fetched from Google Books / Open Library. HTML stripped, truncated to last complete sentence within 380 chars. No DB column needed — fetched on demand.
+- **Phone OTP auth (2026-06-17):** Email/password replaced by phone OTP. `src/pages/PhoneAuth.tsx` — two-step flow: country code select + phone input → 6-digit SMS code. Auth store: `requestOtp(phone)` + `verifyOtp(phone, token)`. `/auth` is the public route; `/login` and `/register` redirect to it. Requires Supabase Phone provider + Twilio. Migration `fix_handle_new_user_for_phone_auth` patches the `handle_new_user` trigger to generate a fallback username when email is NULL (phone-only users).
+- **Book reviews (2026-06-19):** `user_books.review text` column (migration `add_review_to_user_books`). In Library action sheet: textarea (280 char limit) + conditional Save button below the rating section, draft synced on sheet open. Public — visible in the Discover profile modal as an italic quote below the star rating on favourite books.
