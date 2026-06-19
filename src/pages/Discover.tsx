@@ -16,7 +16,7 @@ import type { CandidateBook, DiscoverCandidate } from '../types/discover'
 interface ProfileModal {
   candidate: DiscoverCandidate
   genres: string[]
-  books: { title: string; author: string; cover_url: string | null; rating: number | null; source: string; external_id: string }[]
+  books: { title: string; author: string; cover_url: string | null; rating: number | null; review: string | null; source: string; external_id: string }[]
   loadingExtra: boolean
   photoIndex: number
 }
@@ -272,13 +272,13 @@ export default function Discover() {
     setProfileModal({ candidate, genres: [], books: [], loadingExtra: true, photoIndex: 0 })
     const [{ data: ugData }, { data: ubData }] = await Promise.all([
       supabase.from('user_genres').select('genres(name)').eq('user_id', candidate.id),
-      supabase.from('user_books').select('rating, books(title, author, cover_url, source, external_id)').eq('user_id', candidate.id).eq('is_favorite', true),
+      supabase.from('user_books').select('rating, review, books(title, author, cover_url, source, external_id)').eq('user_id', candidate.id).eq('is_favorite', true),
     ])
     if (profileLoadRef.current !== candidate.id) return
     setProfileModal(prev => prev ? {
       ...prev,
       genres: ((ugData ?? []) as any[]).map(r => r.genres?.name).filter(Boolean),
-      books: ((ubData ?? []) as any[]).map(r => r.books ? { ...r.books, rating: r.rating ?? null } : null).filter(Boolean),
+      books: ((ubData ?? []) as any[]).map(r => r.books ? { ...r.books, rating: r.rating ?? null, review: r.review ?? null } : null).filter(Boolean),
       loadingExtra: false,
     } : null)
   }
@@ -570,6 +570,7 @@ export default function Discover() {
                               <p className="text-sm font-medium text-ink">{b.title}</p>
                               <p className="text-xs text-muted">{b.author}</p>
                               {b.rating && <p className="text-xs text-brand">{'★'.repeat(b.rating)}{'☆'.repeat(5 - b.rating)}</p>}
+                              {b.review && <p className="text-xs text-ink-secondary italic mt-0.5 line-clamp-2">"{b.review}"</p>}
                             </div>
                           </button>
                         ))}

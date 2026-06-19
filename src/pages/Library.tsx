@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, useLayoutEffect } from 'react'
 import { useAuthStore } from '../store/auth'
 import { supabase } from '../lib/supabase'
 import { searchBooks } from '../lib/bookSearch'
@@ -16,6 +16,7 @@ interface LibraryBook {
   shelf: Shelf
   isFavorite: boolean
   rating: number | null
+  review: string | null
   title: string
   author: string
   cover_url: string | null
@@ -63,6 +64,8 @@ export default function Library() {
   // Book action sheet
   const [selected, setSelected] = useState<LibraryBook | null>(null)
   const [moving, setMoving] = useState(false)
+  const [reviewDraft, setReviewDraft] = useState('')
+  const [savingReview, setSavingReview] = useState(false)
   const [detailBook, setDetailBook] = useState<DetailBook | null>(null)
 
   const load = useCallback(async () => {
@@ -70,7 +73,7 @@ export default function Library() {
     setLoading(true)
     const { data } = await supabase
       .from('user_books')
-      .select('id, shelf, is_favorite, rating, books(id, title, author, cover_url, source, external_id)')
+      .select('id, shelf, is_favorite, rating, review, books(id, title, author, cover_url, source, external_id)')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
 
@@ -81,6 +84,7 @@ export default function Library() {
       shelf: r.shelf as Shelf,
       isFavorite: r.is_favorite ?? false,
       rating: r.rating ?? null,
+      review: r.review ?? null,
       title: r.books.title,
       author: r.books.author,
       cover_url: r.books.cover_url,
@@ -146,6 +150,15 @@ export default function Library() {
     setSelected(prev => prev?.userBookId === book.userBookId ? { ...prev, rating: newRating } : prev)
   }
 
+  const saveReview = async (book: LibraryBook) => {
+    const text = reviewDraft.trim() || null
+    setSavingReview(true)
+    await supabase.from('user_books').update({ review: text }).eq('id', book.userBookId)
+    setSavingReview(false)
+    setBooks(prev => prev.map(b => b.userBookId === book.userBookId ? { ...b, review: text } : b))
+    setSelected(prev => prev?.userBookId === book.userBookId ? { ...prev, review: text } : prev)
+  }
+
   const removeBook = async (book: LibraryBook) => {
     setMoving(true)
     await supabase.from('user_books').delete().eq('id', book.userBookId)
@@ -153,6 +166,10 @@ export default function Library() {
     setSelected(null)
     setBooks(prev => prev.filter(b => b.userBookId !== book.userBookId))
   }
+
+  useLayoutEffect(() => {
+    setReviewDraft(selected?.review ?? '')
+  }, [selected?.userBookId])
 
   const shelfCount = (key: ActiveFilter) =>
     key === 'favorite' ? books.filter(b => b.isFavorite).length : books.filter(b => b.shelf === key).length
@@ -376,6 +393,29 @@ export default function Library() {
                   ★
                 </button>
               ))}
+            </div>
+
+            {/* Review */}
+            <p className="text-xs font-semibold text-subtle uppercase tracking-wide mb-2">Your review</p>
+            <textarea
+              value={reviewDraft}
+              onChange={e => setReviewDraft(e.target.value)}
+              placeholder="Write a short review…"
+              maxLength={280}
+              rows={3}
+              className="w-full px-4 py-3 rounded-xl border border-border bg-canvas text-ink text-sm placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-brand resize-none mb-1"
+            />
+            <div className="flex items-center justify-between mb-5">
+              <span className="text-xs text-subtle">{reviewDraft.length}/280</span>
+              {reviewDraft.trim() !== (selected.review ?? '') && (
+                <button
+                  disabled={savingReview}
+                  onClick={() => saveReview(selected)}
+                  className="text-xs font-semibold text-brand-ink disabled:opacity-40"
+                >
+                  {savingReview ? 'Saving…' : 'Save review'}
+                </button>
+              )}
             </div>
 
             <button
