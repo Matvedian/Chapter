@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase'
 import BookDetailModal from '../components/BookDetailModal'
 import type { DetailBook } from '../components/BookDetailModal'
 import BookLikeSheet from '../components/discover/BookLikeSheet'
+import LikeCommentSheet from '../components/discover/LikeCommentSheet'
 import DiscoverCard from '../components/discover/DiscoverCard'
 import VerifiedBadge from '../components/VerifiedBadge'
 import BottomNav from '../components/BottomNav'
@@ -145,6 +146,9 @@ export default function Discover() {
   const [bookLike, setBookLike] = useState<{ candidate: DiscoverCandidate; book: CandidateBook } | null>(null)
   const [bookLikeComment, setBookLikeComment] = useState('')
   const [bookLikeSending, setBookLikeSending] = useState(false)
+  const [likeSheet, setLikeSheet] = useState<DiscoverCandidate | null>(null)
+  const [likeComment, setLikeComment] = useState('')
+  const [likeSending, setLikeSending] = useState(false)
   const topCardRef = useRef<any>(null)
   const swiping = useRef(false)
   const skipNextSwipeRecord = useRef(false)
@@ -224,6 +228,31 @@ export default function Discover() {
     if (topCardRef.current && currentIndex >= 0) {
       skipNextSwipeRecord.current = true
       swiping.current = true
+      await topCardRef.current.swipe('right')
+    }
+  }
+
+  const submitLike = async () => {
+    if (!likeSheet || !user || likeSending) return
+    setLikeSending(true)
+    const candidate = likeSheet
+    setLikeSheet(null)
+
+    await supabase.from('swipes').insert({
+      swiper_id: user.id,
+      swiped_id: candidate.id,
+      direction: 'like',
+      comment: likeComment.trim() || null,
+    })
+
+    await checkForMatch(candidate)
+    setLikeComment('')
+    setLikeSending(false)
+
+    if (topCardRef.current && currentIndex >= 0) {
+      skipNextSwipeRecord.current = true
+      swiping.current = true
+      Haptics.impact({ style: ImpactStyle.Medium })
       await topCardRef.current.swipe('right')
     }
   }
@@ -413,7 +442,12 @@ export default function Discover() {
           ✕
         </button>
         <button
-          onClick={() => triggerSwipe('right')}
+          onClick={() => {
+            if (currentIndex >= 0) {
+              setLikeComment('')
+              setLikeSheet(candidates[currentIndex])
+            }
+          }}
           disabled={isEmpty}
           className="w-16 h-16 rounded-full bg-surface shadow-lg flex items-center justify-center text-2xl hover:scale-110 active:scale-95 transition-transform disabled:opacity-30 disabled:pointer-events-none"
           aria-label="Like"
@@ -586,6 +620,17 @@ export default function Discover() {
       )}
 
       <BookDetailModal book={detailBook} onClose={() => setDetailBook(null)} />
+
+      {likeSheet && (
+        <LikeCommentSheet
+          candidate={likeSheet}
+          comment={likeComment}
+          sending={likeSending}
+          onCommentChange={setLikeComment}
+          onClose={() => { setLikeSheet(null); setLikeComment('') }}
+          onSubmit={submitLike}
+        />
+      )}
 
       {bookLike && (
         <BookLikeSheet
