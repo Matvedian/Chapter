@@ -149,6 +149,7 @@ export default function Discover() {
   const [likeSheet, setLikeSheet] = useState<DiscoverCandidate | null>(null)
   const [likeComment, setLikeComment] = useState('')
   const [likeSending, setLikeSending] = useState(false)
+  const [lastSwiped, setLastSwiped] = useState<{ candidate: DiscoverCandidate; direction: 'like' | 'pass'; matchId: string | null } | null>(null)
   const topCardRef = useRef<any>(null)
   const swiping = useRef(false)
   const skipNextSwipeRecord = useRef(false)
@@ -175,7 +176,7 @@ export default function Discover() {
     setCurrentIndex(filtered.length - 1)
   }, [allCandidates, filters])
 
-  const checkForMatch = useCallback(async (candidate: DiscoverCandidate) => {
+  const checkForMatch = useCallback(async (candidate: DiscoverCandidate): Promise<string | null> => {
     const { data: match } = await supabase
       .from('matches')
       .select('id')
@@ -184,7 +185,9 @@ export default function Discover() {
     if (match) {
       Haptics.notification({ type: NotificationType.Success })
       setMatchName(candidate.name ?? 'Someone')
+      return match.id
     }
+    return null
   }, [user?.id])
 
   const handleSwipe = useCallback(async (direction: string, candidate: DiscoverCandidate) => {
@@ -198,12 +201,12 @@ export default function Discover() {
         swiped_id: candidate.id,
         direction: dirValue,
       })
+      let matchId: string | null = null
+      if (dirValue === 'like') matchId = await checkForMatch(candidate)
+      setLastSwiped({ candidate, direction: dirValue, matchId })
     } else {
       skipNextSwipeRecord.current = false
-    }
-
-    if (dirValue === 'like') {
-      await checkForMatch(candidate)
+      // lastSwiped already set by submitLike / submitBookLike
     }
   }, [user?.id, checkForMatch])
 
@@ -220,7 +223,8 @@ export default function Discover() {
       comment: bookLikeComment.trim() || null,
     })
 
-    await checkForMatch(candidate)
+    const matchId = await checkForMatch(candidate)
+    setLastSwiped({ candidate, direction: 'like', matchId })
     setBookLike(null)
     setBookLikeComment('')
     setBookLikeSending(false)
@@ -245,7 +249,8 @@ export default function Discover() {
       comment: likeComment.trim() || null,
     })
 
-    await checkForMatch(candidate)
+    const matchId = await checkForMatch(candidate)
+    setLastSwiped({ candidate, direction: 'like', matchId })
     setLikeComment('')
     setLikeSending(false)
 
@@ -255,6 +260,25 @@ export default function Discover() {
       Haptics.impact({ style: ImpactStyle.Medium })
       await topCardRef.current.swipe('right')
     }
+  }
+
+  const handleRewind = async () => {
+    if (!lastSwiped || !user) return
+    const { candidate, direction, matchId } = lastSwiped
+    if (candidates[currentIndex + 1]?.id !== candidate.id) {
+      setLastSwiped(null)
+      return
+    }
+    setLastSwiped(null)
+
+    await supabase.from('swipes').delete().eq('swiper_id', user.id).eq('swiped_id', candidate.id)
+    if (direction === 'like' && matchId) {
+      await supabase.from('matches').delete().eq('id', matchId)
+      setMatchName(null)
+    }
+
+    Haptics.impact({ style: ImpactStyle.Light })
+    setCurrentIndex(prev => prev + 1)
   }
 
   const handleCardLeft = useCallback(() => {
@@ -271,12 +295,14 @@ export default function Discover() {
 
   const applyDraft = () => {
     setFilters(draft)
+    setLastSwiped(null)
     setShowFilters(false)
   }
 
   const resetFilters = () => {
     setDraft(DEFAULT_FILTERS)
     setFilters(DEFAULT_FILTERS)
+    setLastSwiped(null)
     setShowFilters(false)
   }
 
@@ -432,7 +458,7 @@ export default function Discover() {
       </div>
 
       {/* Action buttons */}
-      <div className="flex-shrink-0 flex justify-center gap-8 py-5">
+      <div className="flex-shrink-0 flex justify-center items-center gap-5 py-5">
         <button
           onClick={() => triggerSwipe('left')}
           disabled={isEmpty}
@@ -440,6 +466,17 @@ export default function Discover() {
           aria-label="Pass"
         >
           ✕
+        </button>
+        <button
+          onClick={handleRewind}
+          disabled={!lastSwiped}
+          className="w-11 h-11 rounded-full bg-surface shadow-md flex items-center justify-center text-ink-secondary hover:scale-110 active:scale-95 transition-transform disabled:opacity-30 disabled:pointer-events-none"
+          aria-label="Undo last swipe"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+            <path d="M3 7v6h6" />
+            <path d="M3 13C5.5 7.5 12 4 18 7.5s7 12-1 15-15-1-14-8" />
+          </svg>
         </button>
         <button
           onClick={() => {
