@@ -20,6 +20,8 @@ interface Partner {
   identity_verified: boolean
 }
 
+type ReactionsMap = Record<string, { emoji: string; user_id: string }[]>
+
 const REPORT_REASONS = [
   'Inappropriate photos',
   'Offensive or abusive messages',
@@ -27,6 +29,8 @@ const REPORT_REASONS = [
   'I think they\'re underage',
   'Other',
 ]
+
+const REACTION_EMOJIS = ['❤️', '😂', '😮', '😢', '😡', '👍']
 
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -52,9 +56,14 @@ export default function Chat() {
   const [reporting, setReporting] = useState(false)
   const [reportDone, setReportDone] = useState(false)
   const [partnerTyping, setPartnerTyping] = useState(false)
+  const [reactions, setReactions] = useState<ReactionsMap>({})
+  const [pickerMsgId, setPickerMsgId] = useState<string | null>(null)
+  const [pickerY, setPickerY] = useState(0)
   const bottomRef = useRef<HTMLDivElement>(null)
   const channelRef = useRef<RealtimeChannel | null>(null)
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const touchStartPos = useRef<{ x: number; y: number } | null>(null)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -71,6 +80,33 @@ export default function Chat() {
           setMessages(prev => prev.some(m => m.id === msg.id) ? prev : [...prev, msg])
         }
       )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'message_reactions' },
+        (payload) => {
+          const r = payload.new as { message_id: string; user_id: string; emoji: string }
+          setReactions(prev => ({
+            ...prev,
+            [r.message_id]: [
+              ...(prev[r.message_id] ?? []).filter(x => !(x.user_id === r.user_id && x.emoji === r.emoji)),
+              { emoji: r.emoji, user_id: r.user_id },
+            ],
+          }))
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'message_reactions' },
+        (payload) => {
+          const r = payload.old as { message_id: string; user_id: string; emoji: string }
+          setReactions(prev => ({
+            ...prev,
+            [r.message_id]: (prev[r.message_id] ?? []).filter(
+              x => !(x.user_id === r.user_id && x.emoji === r.emoji)
+            ),
+          }))
+        }
+      )
       .on('presence', { event: 'sync' }, () => {
         const state = channel.presenceState<{ typing: boolean }>()
         const isTyping = Object.entries(state).some(
@@ -83,6 +119,7 @@ export default function Chat() {
     channelRef.current = channel
     return () => {
       if (typingTimeout.current) clearTimeout(typingTimeout.current)
+      if (longPressTimer.current) clearTimeout(longPressTimer.current)
       supabase.removeChannel(channel)
       channelRef.current = null
     }
@@ -96,7 +133,6 @@ export default function Chat() {
     setLoading(true)
     setLoadError(false)
 
-    // Fetch match and messages in parallel — messages don't depend on the match
     const [{ data: match }, { data: msgs, error: msgsError }] = await Promise.all([
       supabase.from('matches').select('user1_id, user2_id').eq('id', matchId!).single(),
       supabase.from('messages').select('id, sender_id, content, created_at').eq('match_id', matchId!).order('created_at', { ascending: true }),
@@ -104,7 +140,6 @@ export default function Chat() {
 
     if (msgsError) { setLoadError(true); setLoading(false); return }
 
-    // Profile fetch uses otherId from match — fire after parallel pair resolves
     if (match) {
       const otherId = match.user1_id === user!.id ? match.user2_id : match.user1_id
       supabase.from('profiles').select('name, photos, identity_verified').eq('id', otherId).single().then(({ data: p }) => {
@@ -112,14 +147,31 @@ export default function Chat() {
       })
     }
 
-    setMessages(prev => {
+    const mergedMsgs = (() => {
       const byId = new Map<string, Message>()
       for (const m of (msgs ?? [])) byId.set(m.id, m)
-      for (const m of prev) byId.set(m.id, m)
       return [...byId.values()].sort(
         (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
       )
-    })
+    })()
+
+    setMessages(mergedMsgs)
+
+    if (mergedMsgs.length > 0) {
+      const { data: rxData } = await supabase
+        .from('message_reactions')
+        .select('message_id, user_id, emoji')
+        .in('message_id', mergedMsgs.map(m => m.id))
+      if (rxData) {
+        const rxMap: ReactionsMap = {}
+        for (const r of rxData) {
+          if (!rxMap[r.message_id]) rxMap[r.message_id] = []
+          rxMap[r.message_id].push({ emoji: r.emoji, user_id: r.user_id })
+        }
+        setReactions(rxMap)
+      }
+    }
+
     setLoading(false)
   }
 
@@ -154,6 +206,43 @@ export default function Chat() {
 
   const handleKey = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() }
+  }
+
+  const toggleReaction = async (messageId: string, emoji: string) => {
+    if (!user) return
+    setPickerMsgId(null)
+    const hasReacted = reactions[messageId]?.some(r => r.user_id === user.id && r.emoji === emoji)
+    if (hasReacted) {
+      await supabase.from('message_reactions').delete()
+        .eq('message_id', messageId).eq('user_id', user.id).eq('emoji', emoji)
+    } else {
+      await supabase.from('message_reactions').insert({ message_id: messageId, user_id: user.id, emoji })
+    }
+  }
+
+  const handleTouchStart = (msgId: string, e: React.TouchEvent) => {
+    touchStartPos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }
+    const target = e.currentTarget as HTMLElement
+    longPressTimer.current = setTimeout(() => {
+      const rect = target.getBoundingClientRect()
+      setPickerY(Math.max(70, rect.top - 52))
+      setPickerMsgId(msgId)
+    }, 500)
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!touchStartPos.current || !longPressTimer.current) return
+    const dx = Math.abs(e.touches[0].clientX - touchStartPos.current.x)
+    const dy = Math.abs(e.touches[0].clientY - touchStartPos.current.y)
+    if (dx > 10 || dy > 10) {
+      clearTimeout(longPressTimer.current)
+      longPressTimer.current = null
+    }
+  }
+
+  const handleTouchEnd = () => {
+    if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null }
+    touchStartPos.current = null
   }
 
   const unmatch = async () => {
@@ -269,18 +358,57 @@ export default function Chat() {
         ) : (
           messages.map(msg => {
             const mine = msg.sender_id === user?.id
+            const msgReactions = reactions[msg.id] ?? []
+            const grouped = REACTION_EMOJIS
+              .map(emoji => ({
+                emoji,
+                count: msgReactions.filter(r => r.emoji === emoji).length,
+                mine: msgReactions.some(r => r.emoji === emoji && r.user_id === user?.id),
+              }))
+              .filter(g => g.count > 0)
+
             return (
-              <div key={msg.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[75%] px-4 py-2 rounded-2xl text-sm ${
-                  mine
-                    ? 'bg-brand text-on-brand rounded-br-sm'
-                    : 'bg-surface text-ink shadow-sm rounded-bl-sm'
-                }`}>
+              <div key={msg.id} className={`flex flex-col ${mine ? 'items-end' : 'items-start'}`}>
+                <div
+                  className={`max-w-[75%] px-4 py-2 rounded-2xl text-sm select-none ${
+                    mine
+                      ? 'bg-brand text-on-brand rounded-br-sm'
+                      : 'bg-surface text-ink shadow-sm rounded-bl-sm'
+                  } ${pickerMsgId === msg.id ? 'opacity-75' : ''}`}
+                  onTouchStart={e => handleTouchStart(msg.id, e)}
+                  onTouchMove={handleTouchMove}
+                  onTouchEnd={handleTouchEnd}
+                  onContextMenu={e => {
+                    e.preventDefault()
+                    const rect = e.currentTarget.getBoundingClientRect()
+                    setPickerY(Math.max(70, rect.top - 52))
+                    setPickerMsgId(msg.id)
+                  }}
+                >
                   <p>{msg.content}</p>
                   <p className={`text-xs mt-1 ${mine ? 'text-ink-secondary/60' : 'text-subtle'}`}>
                     {formatTime(msg.created_at)}
                   </p>
                 </div>
+
+                {grouped.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {grouped.map(g => (
+                      <button
+                        key={g.emoji}
+                        onClick={() => toggleReaction(msg.id, g.emoji)}
+                        className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-xs border transition-colors ${
+                          g.mine
+                            ? 'bg-brand-subtle border-brand text-brand-ink'
+                            : 'bg-surface border-border text-ink-secondary'
+                        }`}
+                      >
+                        <span>{g.emoji}</span>
+                        {g.count > 1 && <span className="font-medium">{g.count}</span>}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             )
           })
@@ -324,6 +452,32 @@ export default function Chat() {
         </Button>
       </div>
       </div>
+
+      {/* Emoji picker */}
+      {pickerMsgId && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setPickerMsgId(null)} />
+          <div
+            className="fixed z-50 bg-surface rounded-full shadow-xl border border-border flex gap-0.5 px-2 py-1.5"
+            style={{ top: pickerY, left: '50%', transform: 'translateX(-50%)' }}
+          >
+            {REACTION_EMOJIS.map(emoji => {
+              const hasReacted = reactions[pickerMsgId]?.some(r => r.user_id === user?.id && r.emoji === emoji)
+              return (
+                <button
+                  key={emoji}
+                  onClick={() => toggleReaction(pickerMsgId, emoji)}
+                  className={`w-10 h-10 flex items-center justify-center text-xl hover:scale-125 active:scale-110 transition-transform rounded-full ${
+                    hasReacted ? 'bg-brand-subtle' : ''
+                  }`}
+                >
+                  {emoji}
+                </button>
+              )
+            })}
+          </div>
+        </>
+      )}
 
       {/* Unmatch confirmation */}
       {showUnmatchConfirm && (
