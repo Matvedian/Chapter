@@ -18,6 +18,12 @@ const LOOKING_FOR = [
   { value: 'nonbinary', label: 'Non-binary' },
 ]
 
+const RELATIONSHIP_GOALS = [
+  { value: 'casual', label: 'Casual' },
+  { value: 'serious', label: 'Serious' },
+  { value: 'open', label: 'Open to either' },
+]
+
 const maxBirthDate = (() => {
   const d = new Date()
   d.setFullYear(d.getFullYear() - 18)
@@ -38,6 +44,7 @@ export default function StepInfo({ onNext }: Props) {
   const [birthDate, setBirthDate] = useState('')
   const [gender, setGender] = useState('')
   const [lookingFor, setLookingFor] = useState<string[]>([])
+  const [relationshipGoal, setRelationshipGoal] = useState('')
   const [bio, setBio] = useState('')
   const [ageError, setAgeError] = useState(false)
 
@@ -47,11 +54,11 @@ export default function StepInfo({ onNext }: Props) {
     )
   }
 
-  const canContinue = name.trim() && birthDate && gender && lookingFor.length > 0
+  const canContinue = name.trim() && birthDate && gender && lookingFor.length > 0 && relationshipGoal
 
   const handleContinue = () => {
     if (getAge(birthDate) < 18) { setAgeError(true); return }
-    onNext({ name: name.trim(), birthDate, gender, lookingFor, bio })
+    onNext({ name: name.trim(), birthDate, gender, lookingFor, relationshipGoal, bio })
   }
 
   return (
@@ -113,6 +120,21 @@ export default function StepInfo({ onNext }: Props) {
                 onClick={() => toggleLookingFor(l.value)}
               >
                 {l.label}
+              </Chip>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <Label>Relationship goal</Label>
+          <div className="flex gap-2 flex-wrap mt-2">
+            {RELATIONSHIP_GOALS.map(g => (
+              <Chip
+                key={g.value}
+                selected={relationshipGoal === g.value}
+                onClick={() => setRelationshipGoal(g.value)}
+              >
+                {g.label}
               </Chip>
             ))}
           </div>

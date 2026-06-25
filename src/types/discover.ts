@@ -18,6 +18,7 @@ export interface DiscoverCandidate {
   sharedGenres: number
   gender: string | null
   bio: string | null
+  relationship_goal: string | null
   identity_verified: boolean
   books: CandidateBook[]
   genres: string[]

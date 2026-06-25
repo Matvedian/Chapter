@@ -24,6 +24,7 @@ export interface OnboardingData {
   birthDate: string
   gender: string
   lookingFor: string[]
+  relationshipGoal: string
   bio: string
   genreIds: number[]
   books: SelectedBook[]
@@ -37,6 +38,7 @@ export default function Onboarding() {
     birthDate: '',
     gender: '',
     lookingFor: [],
+    relationshipGoal: '',
     bio: '',
     genreIds: [],
     books: [],
@@ -65,6 +67,7 @@ export default function Onboarding() {
       birth_date: d.birthDate,
       gender: d.gender,
       looking_for: d.lookingFor,
+      relationship_goal: d.relationshipGoal || null,
       bio: d.bio || null,
       photos: d.photos,
       onboarding_complete: true,

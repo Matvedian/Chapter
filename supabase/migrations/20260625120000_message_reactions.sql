@@ -1,4 +1,4 @@
-CREATE TABLE public.message_reactions (
+CREATE TABLE IF NOT EXISTS public.message_reactions (
   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
   message_id uuid NOT NULL REFERENCES public.messages(id) ON DELETE CASCADE,
   user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -7,11 +7,10 @@ CREATE TABLE public.message_reactions (
   UNIQUE(message_id, user_id, emoji)
 );
 
--- Full replica identity so DELETE payloads include all columns (needed for Realtime)
 ALTER TABLE public.message_reactions REPLICA IDENTITY FULL;
-
 ALTER TABLE public.message_reactions ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view reactions in their matches" ON public.message_reactions;
 CREATE POLICY "Users can view reactions in their matches"
   ON public.message_reactions FOR SELECT
   USING (
@@ -23,6 +22,7 @@ CREATE POLICY "Users can view reactions in their matches"
     )
   );
 
+DROP POLICY IF EXISTS "Users can add reactions in their matches" ON public.message_reactions;
 CREATE POLICY "Users can add reactions in their matches"
   ON public.message_reactions FOR INSERT
   WITH CHECK (
@@ -35,8 +35,12 @@ CREATE POLICY "Users can add reactions in their matches"
     )
   );
 
+DROP POLICY IF EXISTS "Users can remove their own reactions" ON public.message_reactions;
 CREATE POLICY "Users can remove their own reactions"
   ON public.message_reactions FOR DELETE
   USING (user_id = auth.uid());
 
-ALTER PUBLICATION supabase_realtime ADD TABLE public.message_reactions;
+DO $$ BEGIN
+  ALTER PUBLICATION supabase_realtime ADD TABLE public.message_reactions;
+EXCEPTION WHEN others THEN NULL;
+END $$;

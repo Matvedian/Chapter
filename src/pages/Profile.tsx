@@ -161,8 +161,10 @@ export default function Profile() {
             </p>
             {profile?.identity_verified && <VerifiedBadge size="md" />}
           </div>
-          {profile?.gender && (
-            <p className="text-muted text-sm mt-1 capitalize">{profile.gender}</p>
+          {(profile?.gender || profile?.relationship_goal) && (
+            <p className="text-muted text-sm mt-1 capitalize">
+              {[profile.gender, profile.relationship_goal === 'open' ? 'Open to either' : profile.relationship_goal].filter(Boolean).join(' · ')}
+            </p>
           )}
           {profile?.bio && (
             <p className="text-ink-secondary text-sm mt-3 text-center leading-relaxed">{profile.bio}</p>

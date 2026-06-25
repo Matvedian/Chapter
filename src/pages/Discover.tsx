@@ -26,10 +26,16 @@ interface Filters {
   minAge: number
   maxAge: number
   genders: string[]
+  goals: string[]
 }
 
-const DEFAULT_FILTERS: Filters = { minAge: 18, maxAge: 80, genders: [] }
+const DEFAULT_FILTERS: Filters = { minAge: 18, maxAge: 80, genders: [], goals: [] }
 const GENDER_OPTIONS = ['man', 'woman', 'non-binary', 'other']
+const GOAL_OPTIONS = [
+  { value: 'casual', label: 'Casual' },
+  { value: 'serious', label: 'Serious' },
+  { value: 'open', label: 'Open to either' },
+]
 
 function getAge(birthDate: string): number {
   const today = new Date()
@@ -47,6 +53,7 @@ function applyFilters(candidates: DiscoverCandidate[], f: Filters): DiscoverCand
       if (age < f.minAge || age > f.maxAge) return false
     }
     if (f.genders.length > 0 && !f.genders.includes(c.gender ?? '')) return false
+    if (f.goals.length > 0 && c.relationship_goal && !f.goals.includes(c.relationship_goal)) return false
     return true
   })
 }
@@ -55,6 +62,7 @@ function filtersActive(f: Filters): boolean {
   return f.minAge !== DEFAULT_FILTERS.minAge
     || f.maxAge !== DEFAULT_FILTERS.maxAge
     || f.genders.length > 0
+    || f.goals.length > 0
 }
 
 function DualRangeSlider({ min, max, low, high, onChange }: {
@@ -310,6 +318,13 @@ export default function Discover() {
     setDraft(d => ({
       ...d,
       genders: d.genders.includes(g) ? d.genders.filter(x => x !== g) : [...d.genders, g],
+    }))
+  }
+
+  const toggleGoal = (g: string) => {
+    setDraft(d => ({
+      ...d,
+      goals: d.goals.includes(g) ? d.goals.filter(x => x !== g) : [...d.goals, g],
     }))
   }
 
@@ -580,8 +595,13 @@ export default function Discover() {
                   </h2>
                   {profileModal.candidate.identity_verified && <VerifiedBadge size="md" />}
                 </div>
-                {profileModal.candidate.gender && (
-                  <p className="text-muted text-sm capitalize mt-0.5">{profileModal.candidate.gender}</p>
+                {(profileModal.candidate.gender || profileModal.candidate.relationship_goal) && (
+                  <p className="text-muted text-sm capitalize mt-0.5">
+                    {[
+                      profileModal.candidate.gender,
+                      profileModal.candidate.relationship_goal === 'open' ? 'Open to either' : profileModal.candidate.relationship_goal,
+                    ].filter(Boolean).join(' · ')}
+                  </p>
                 )}
               </div>
 
@@ -738,6 +758,32 @@ export default function Discover() {
               </div>
               {draft.genders.length === 0 && (
                 <p className="text-xs text-subtle">No gender filter — showing all matches</p>
+              )}
+            </div>
+
+            {/* Relationship goal */}
+            <div className="flex flex-col gap-3">
+              <p className="text-sm font-semibold text-ink-secondary">Relationship goal</p>
+              <div className="flex flex-wrap gap-2">
+                {GOAL_OPTIONS.map(g => {
+                  const active = draft.goals.includes(g.value)
+                  return (
+                    <button
+                      key={g.value}
+                      onClick={() => toggleGoal(g.value)}
+                      className={`px-4 py-2 rounded-full text-sm font-medium border transition-colors ${
+                        active
+                          ? 'bg-brand border-brand text-ink'
+                          : 'bg-surface border-border text-ink-secondary hover:border-border-strong'
+                      }`}
+                    >
+                      {g.label}
+                    </button>
+                  )
+                })}
+              </div>
+              {draft.goals.length === 0 && (
+                <p className="text-xs text-subtle">No goal filter — showing all matches</p>
               )}
             </div>
 

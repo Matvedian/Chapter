@@ -33,6 +33,12 @@ const LOOKING_FOR = [
   { value: 'nonbinary', label: 'Non-binary' },
 ]
 
+const RELATIONSHIP_GOALS = [
+  { value: 'casual', label: 'Casual' },
+  { value: 'serious', label: 'Serious' },
+  { value: 'open', label: 'Open to either' },
+]
+
 const maxBirthDate = (() => {
   const d = new Date()
   d.setFullYear(d.getFullYear() - 18)
@@ -116,6 +122,7 @@ export default function ProfileEdit() {
   const [birthDate, setBirthDate] = useState(profile?.birth_date ?? '')
   const [gender, setGender] = useState(profile?.gender ?? '')
   const [lookingFor, setLookingFor] = useState<string[]>(profile?.looking_for ?? [])
+  const [relationshipGoal, setRelationshipGoal] = useState(profile?.relationship_goal ?? '')
   const [bio, setBio] = useState(profile?.bio ?? '')
   const [infoSaving, setInfoSaving] = useState(false)
   const [infoFeedback, setInfoFeedback] = useState<Feedback>(null)
@@ -243,7 +250,8 @@ export default function ProfileEdit() {
     if (!user) return
     setInfoSaving(true)
     const { error } = await supabase.from('profiles').update({
-      name: name.trim(), birth_date: birthDate, gender, looking_for: lookingFor, bio: bio.trim() || null,
+      name: name.trim(), birth_date: birthDate, gender, looking_for: lookingFor,
+      relationship_goal: relationshipGoal || null, bio: bio.trim() || null,
     }).eq('id', user.id)
     setInfoSaving(false)
     if (!error) { await fetchProfile(user.id); flash('info', setInfoFeedback, 'saved') }
@@ -318,6 +326,7 @@ export default function ProfileEdit() {
     birthDate !== (profile?.birth_date ?? '') ||
     gender !== (profile?.gender ?? '') ||
     JSON.stringify([...lookingFor].sort()) !== JSON.stringify([...(profile?.looking_for ?? [])].sort()) ||
+    relationshipGoal !== (profile?.relationship_goal ?? '') ||
     bio.trim() !== (profile?.bio ?? '')
   const genresDirty =
     JSON.stringify([...selectedGenres].sort()) !== JSON.stringify([...originalGenres].sort())
@@ -423,6 +432,17 @@ export default function ProfileEdit() {
               {LOOKING_FOR.map(l => (
                 <Chip key={l.value} selected={lookingFor.includes(l.value)} onClick={() => toggleLookingFor(l.value)}>
                   {l.label}
+                </Chip>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <Label>Relationship goal</Label>
+            <div className="flex gap-2 flex-wrap mt-2">
+              {RELATIONSHIP_GOALS.map(g => (
+                <Chip key={g.value} selected={relationshipGoal === g.value} onClick={() => setRelationshipGoal(prev => prev === g.value ? '' : g.value)}>
+                  {g.label}
                 </Chip>
               ))}
             </div>

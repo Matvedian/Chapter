@@ -41,7 +41,7 @@ export async function loadDiscoverCandidates(
     { data: ugRows },
     { data: myBooks },
   ] = await Promise.all([
-    supabase.from('profiles').select('id, name, birth_date, photos, gender, bio, identity_verified').in('id', ids),
+    supabase.from('profiles').select('id, name, birth_date, photos, gender, bio, identity_verified, relationship_goal').in('id', ids),
     supabase.from('user_books').select('user_id, book_id, books(id, title, author, cover_url, source, external_id)').in('user_id', ids).eq('is_favorite', true),
     supabase.from('user_books').select('user_id, book_id, books(id, title, author, cover_url, source, external_id)').in('user_id', ids).eq('shelf', 'reading'),
     supabase.from('user_genres').select('user_id, genres(name)').in('user_id', ids),
@@ -98,6 +98,7 @@ export async function loadDiscoverCandidates(
         sharedGenres,
         gender: p.gender ?? null,
         bio: p.bio ?? null,
+        relationship_goal: p.relationship_goal ?? null,
         identity_verified: p.identity_verified ?? false,
         books: booksByUser.get(id) ?? [],
         genres: genresByUser.get(id) ?? [],
