@@ -59,6 +59,7 @@ export default function Chat() {
   const [reactions, setReactions] = useState<ReactionsMap>({})
   const [pickerMsgId, setPickerMsgId] = useState<string | null>(null)
   const [pickerY, setPickerY] = useState(0)
+  const [partnerLastRead, setPartnerLastRead] = useState<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const channelRef = useRef<RealtimeChannel | null>(null)
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -78,6 +79,23 @@ export default function Chat() {
         (payload) => {
           const msg = payload.new as Message
           setMessages(prev => prev.some(m => m.id === msg.id) ? prev : [...prev, msg])
+          // Mark as read when the partner sends a new message while we're in the chat
+          if (msg.sender_id !== user.id) {
+            supabase.from('match_reads').upsert(
+              { match_id: matchId, user_id: user.id, last_read_at: new Date().toISOString() },
+              { onConflict: 'match_id,user_id' }
+            )
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'match_reads', filter: `match_id=eq.${matchId}` },
+        (payload) => {
+          const r = (payload.new ?? {}) as { user_id?: string; last_read_at?: string }
+          if (r.user_id && r.user_id !== user.id && r.last_read_at) {
+            setPartnerLastRead(r.last_read_at)
+          }
         }
       )
       .on(
@@ -157,6 +175,18 @@ export default function Chat() {
 
     setMessages(mergedMsgs)
 
+    // Mark this chat as read and fetch partner's last-read timestamp
+    supabase.from('match_reads').upsert(
+      { match_id: matchId!, user_id: user!.id, last_read_at: new Date().toISOString() },
+      { onConflict: 'match_id,user_id' }
+    )
+    supabase.from('match_reads').select('user_id, last_read_at').eq('match_id', matchId!).then(({ data: reads }) => {
+      if (reads) {
+        const pr = reads.find(r => r.user_id !== user!.id)
+        if (pr) setPartnerLastRead(pr.last_read_at)
+      }
+    })
+
     if (mergedMsgs.length > 0) {
       const { data: rxData } = await supabase
         .from('message_reactions')
@@ -201,6 +231,10 @@ export default function Chat() {
       setSendError(true)
     } else {
       setText('')
+      supabase.from('match_reads').upsert(
+        { match_id: matchId, user_id: user.id, last_read_at: new Date().toISOString() },
+        { onConflict: 'match_id,user_id' }
+      )
     }
   }
 
@@ -356,7 +390,13 @@ export default function Chat() {
             Say hello to {partner.name ?? 'your match'}!
           </p>
         ) : (
-          messages.map(msg => {
+          (() => {
+            const lastSeenIdx = partnerLastRead
+              ? messages.reduce((last, msg, i) =>
+                  msg.sender_id === user?.id && msg.created_at <= partnerLastRead ? i : last, -1)
+              : -1
+
+            return messages.map((msg, index) => {
             const mine = msg.sender_id === user?.id
             const msgReactions = reactions[msg.id] ?? []
             const grouped = REACTION_EMOJIS
@@ -409,9 +449,14 @@ export default function Chat() {
                     ))}
                   </div>
                 )}
+
+                {mine && index === lastSeenIdx && (
+                  <p className="text-xs text-subtle mt-0.5">Seen</p>
+                )}
               </div>
             )
           })
+          })()
         )}
         {partnerTyping && (
           <div className="flex justify-start">
