@@ -178,6 +178,17 @@ export default function DiscoverCard({
           </div>
         )}
 
+        {candidate.prompts[0] && (
+          <div className="bg-canvas border border-border rounded-xl px-3 py-2.5 mb-3">
+            <p className="text-[10px] font-semibold text-subtle uppercase tracking-wide mb-1">
+              {candidate.prompts[0].question}
+            </p>
+            <p className="text-xs text-ink leading-relaxed line-clamp-3 italic">
+              "{candidate.prompts[0].answer}"
+            </p>
+          </div>
+        )}
+
         <div className="mt-auto flex items-end justify-between gap-2">
           <div className="min-w-0">
             <p className="text-lg font-bold text-ink leading-snug truncate">

@@ -23,4 +23,5 @@ export interface DiscoverCandidate {
   books: CandidateBook[]
   genres: string[]
   reading: CandidateBook[]
+  prompts: { question: string; answer: string }[]
 }

@@ -39,6 +39,7 @@ export default function Profile() {
   const [deleteState, setDeleteState] = useState<DeleteState>('idle')
   const [deleteError, setDeleteError] = useState('')
   const [readingBooks, setReadingBooks] = useState<{ title: string; author: string; cover_url: string | null }[]>([])
+  const [prompts, setPrompts] = useState<{ question: string; answer: string }[]>([])
 
   const loadReadingBooks = useCallback(async () => {
     if (!user) return
@@ -56,6 +57,16 @@ export default function Profile() {
   useEffect(() => {
     loadReadingBooks()
   }, [loadReadingBooks, location.key])
+
+  useEffect(() => {
+    if (!user) return
+    supabase
+      .from('profile_prompts')
+      .select('question, answer, position')
+      .eq('user_id', user.id)
+      .order('position')
+      .then(({ data }) => setPrompts((data ?? []) as { question: string; answer: string }[]))
+  }, [user?.id, location.key])
 
   const photo = profile?.photos?.[0] ?? null
   const age = profile?.birth_date ? getAge(profile.birth_date) : null
@@ -193,6 +204,16 @@ export default function Profile() {
                   </button>
                 ))}
               </div>
+            </div>
+          )}
+          {prompts.length > 0 && (
+            <div className="mt-4 w-full space-y-3">
+              {prompts.map(p => (
+                <div key={p.question} className="bg-surface border border-border rounded-xl px-4 py-3 text-left">
+                  <p className="text-[11px] font-semibold text-subtle uppercase tracking-wide mb-1.5">{p.question}</p>
+                  <p className="text-sm text-ink leading-relaxed italic">"{p.answer}"</p>
+                </div>
+              ))}
             </div>
           )}
         </div>

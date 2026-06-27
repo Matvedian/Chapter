@@ -7,8 +7,9 @@ import StepPhotos from './StepPhotos'
 import StepInfo from './StepInfo'
 import StepGenres from './StepGenres'
 import StepBooks from './StepBooks'
+import StepPrompts from './StepPrompts'
 
-const STEPS = ['Info', 'Photos', 'Genres', 'Books']
+const STEPS = ['Info', 'Photos', 'Genres', 'Books', 'Prompts']
 
 export interface SelectedBook {
   source: 'google_books' | 'open_library' | 'spotify'
@@ -28,6 +29,7 @@ export interface OnboardingData {
   bio: string
   genreIds: number[]
   books: SelectedBook[]
+  prompts: { question: string; answer: string; position: number }[]
 }
 
 export default function Onboarding() {
@@ -42,6 +44,7 @@ export default function Onboarding() {
     bio: '',
     genreIds: [],
     books: [],
+    prompts: [],
   })
   const [submitting, setSubmitting] = useState(false)
   const { user } = useAuthStore()
@@ -100,6 +103,13 @@ export default function Onboarding() {
       }
     }
 
+    if (d.prompts.length > 0) {
+      await supabase.from('profile_prompts').delete().eq('user_id', user.id)
+      await supabase.from('profile_prompts').insert(
+        d.prompts.map(p => ({ user_id: user.id, question: p.question, answer: p.answer, position: p.position }))
+      )
+    }
+
     await fetchProfile(user.id)
     setSubmitting(false)
     navigate('/taste-preview', { replace: true })
@@ -124,7 +134,8 @@ export default function Onboarding() {
       {step === 0 && <StepInfo onNext={next} />}
       {step === 1 && <StepPhotos onNext={next} />}
       {step === 2 && <StepGenres onNext={next} />}
-      {step === 3 && <StepBooks onNext={next} submitting={submitting} />}
+      {step === 3 && <StepBooks onNext={next} submitting={false} />}
+      {step === 4 && <StepPrompts onNext={next} submitting={submitting} />}
     </div>
   )
 }

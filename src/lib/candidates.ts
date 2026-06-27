@@ -40,12 +40,14 @@ export async function loadDiscoverCandidates(
     { data: readingRows },
     { data: ugRows },
     { data: myBooks },
+    { data: promptRows },
   ] = await Promise.all([
     supabase.from('profiles').select('id, name, birth_date, photos, gender, bio, identity_verified, relationship_goal').in('id', ids),
     supabase.from('user_books').select('user_id, book_id, books(id, title, author, cover_url, source, external_id)').in('user_id', ids).eq('is_favorite', true),
     supabase.from('user_books').select('user_id, book_id, books(id, title, author, cover_url, source, external_id)').in('user_id', ids).eq('shelf', 'reading'),
     supabase.from('user_genres').select('user_id, genres(name)').in('user_id', ids),
     supabase.from('user_books').select('book_id').eq('user_id', userId),
+    supabase.from('profile_prompts').select('user_id, question, answer, position').in('user_id', ids).order('position'),
   ])
 
   if (profilesError || !profiles?.length) return { candidates: [], error: true }
@@ -80,6 +82,14 @@ export async function loadDiscoverCandidates(
     genresByUser.set(r.user_id, list)
   }
 
+  const promptsByUser = new Map<string, { question: string; answer: string }[]>()
+  for (const row of promptRows ?? []) {
+    const r = row as { user_id: string; question: string; answer: string; position: number }
+    const list = promptsByUser.get(r.user_id) ?? []
+    list.push({ question: r.question, answer: r.answer })
+    promptsByUser.set(r.user_id, list)
+  }
+
   const profileMap = Object.fromEntries(profiles.map(p => [p.id, p]))
   const candidates: DiscoverCandidate[] = ids
     .map(id => {
@@ -103,6 +113,7 @@ export async function loadDiscoverCandidates(
         books: booksByUser.get(id) ?? [],
         genres: genresByUser.get(id) ?? [],
         reading: readingByUser.get(id) ?? [],
+        prompts: promptsByUser.get(id) ?? [],
       }
     })
     .filter((c): c is DiscoverCandidate => c !== null)

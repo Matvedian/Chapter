@@ -17,9 +17,11 @@ import { supabase } from '../lib/supabase'
 import { searchBooks } from '../lib/bookSearch'
 import type { BookResult } from '../lib/bookSearch'
 import { Button, Chip, Input, Label, Textarea } from '../components/ui'
+import { PROMPT_QUESTIONS } from './onboarding/StepPrompts'
 
 interface Genre { id: number; name: string }
 interface BookItem { source: string; external_id: string; title: string; author: string; cover_url: string | null }
+interface PromptItem { question: string; answer: string; position: number }
 
 const GENDERS = [
   { value: 'man', label: 'Man' },
@@ -134,6 +136,13 @@ export default function ProfileEdit() {
   const [genresSaving, setGenresSaving] = useState(false)
   const [genresFeedback, setGenresFeedback] = useState<Feedback>(null)
 
+  // ── Prompts ───────────────────────────────────────────────
+  const [selectedPrompts, setSelectedPrompts] = useState<PromptItem[]>([])
+  const [originalPrompts, setOriginalPrompts] = useState<PromptItem[]>([])
+  const [pickingPrompt, setPickingPrompt] = useState(false)
+  const [promptsSaving, setPromptsSaving] = useState(false)
+  const [promptsFeedback, setPromptsFeedback] = useState<Feedback>(null)
+
   // ── Books ─────────────────────────────────────────────────
   const [selectedBooks, setSelectedBooks] = useState<BookItem[]>([])
   const [originalBooks, setOriginalBooks] = useState<{ userBookId: string; external_id: string }[]>([])
@@ -174,6 +183,21 @@ export default function ProfileEdit() {
         const books: BookItem[] = rows.map(r => r.books as BookItem | null).filter((b): b is BookItem => b !== null)
         setSelectedBooks(books)
         setOriginalBooks(rows.map(r => ({ userBookId: r.id as string, external_id: (r.books as BookItem).external_id })))
+      })
+  }, [user?.id])
+
+  // Load user's current prompts
+  useEffect(() => {
+    if (!user) return
+    supabase
+      .from('profile_prompts')
+      .select('question, answer, position')
+      .eq('user_id', user.id)
+      .order('position')
+      .then(({ data }) => {
+        const prompts = (data ?? []) as PromptItem[]
+        setSelectedPrompts(prompts)
+        setOriginalPrompts(prompts)
       })
   }, [user?.id])
 
@@ -319,6 +343,20 @@ export default function ProfileEdit() {
     flash('books', setBooksFeedback, allAdded ? 'saved' : 'error')
   }
 
+  const savePrompts = async () => {
+    if (!user) return
+    setPromptsSaving(true)
+    await supabase.from('profile_prompts').delete().eq('user_id', user.id)
+    const { error } = selectedPrompts.length > 0
+      ? await supabase.from('profile_prompts').insert(
+          selectedPrompts.map((p, i) => ({ user_id: user.id, question: p.question, answer: p.answer, position: i }))
+        )
+      : { error: null }
+    setPromptsSaving(false)
+    if (!error) { setOriginalPrompts([...selectedPrompts]); flash('prompts', setPromptsFeedback, 'saved') }
+    else flash('prompts', setPromptsFeedback, 'error')
+  }
+
   // ── Dirty checks ──────────────────────────────────────────
   const photosDirty = JSON.stringify(photos) !== JSON.stringify(profile?.photos ?? [])
   const infoDirty =
@@ -333,6 +371,9 @@ export default function ProfileEdit() {
   const booksDirty =
     JSON.stringify([...selectedBooks.map(b => b.external_id)].sort()) !==
     JSON.stringify([...originalBooks.map(b => b.external_id)].sort())
+  const promptsDirty =
+    JSON.stringify(selectedPrompts.map(p => `${p.question}::${p.answer}`)) !==
+    JSON.stringify(originalPrompts.map(p => `${p.question}::${p.answer}`))
 
   if (!profile || !user) return null
 
@@ -497,7 +538,7 @@ export default function ProfileEdit() {
         </section>
 
         {/* ── Books ── */}
-        <section className="bg-surface px-6 py-6 pb-12">
+        <section className="bg-surface border-b border-border px-6 py-6">
           <h2 className="text-base font-semibold text-ink mb-1">Favourite books</h2>
           <p className="text-muted text-xs mb-4">At least 1 required.</p>
 
@@ -578,6 +619,71 @@ export default function ProfileEdit() {
             size="sm"
           >
             {booksSaving ? 'Saving…' : 'Save books'}
+          </Button>
+        </section>
+
+        {/* ── Prompts ── */}
+        <section className="bg-surface px-6 py-6 pb-12">
+          <h2 className="text-base font-semibold text-ink mb-1">Book prompts</h2>
+          <p className="text-muted text-xs mb-4">Up to 3 Q&As shown on your profile. Optional.</p>
+
+          {selectedPrompts.map((p, i) => (
+            <div key={p.question} className="mb-4 border border-border rounded-xl p-4">
+              <div className="flex items-start justify-between gap-2 mb-2">
+                <p className="text-sm font-medium text-ink">{p.question}</p>
+                <button
+                  onClick={() => setSelectedPrompts(prev => prev.filter((_, j) => j !== i))}
+                  className="w-5 h-5 rounded-full bg-border text-muted text-xs flex items-center justify-center flex-shrink-0 mt-0.5"
+                  aria-label="Remove prompt"
+                >×</button>
+              </div>
+              <div className="relative">
+                <Textarea
+                  value={p.answer}
+                  onChange={e => setSelectedPrompts(prev => prev.map((x, j) => j === i ? { ...x, answer: e.target.value.slice(0, 150) } : x))}
+                  rows={2}
+                />
+                <span className="absolute bottom-2 right-2 text-xs text-subtle pointer-events-none">{p.answer.length}/150</span>
+              </div>
+            </div>
+          ))}
+
+          {selectedPrompts.length < 3 && !pickingPrompt && (
+            <button
+              onClick={() => setPickingPrompt(true)}
+              className="w-full border-2 border-dashed border-border rounded-xl py-3 text-sm text-subtle hover:border-brand hover:text-brand-ink transition-colors mb-4"
+            >
+              + Add a prompt
+            </button>
+          )}
+
+          {pickingPrompt && (
+            <div className="mb-4 border border-border rounded-xl overflow-hidden">
+              {PROMPT_QUESTIONS.filter(q => !selectedPrompts.some(p => p.question === q)).map(q => (
+                <button
+                  key={q}
+                  type="button"
+                  onClick={() => {
+                    setSelectedPrompts(prev => [...prev, { question: q, answer: '', position: prev.length }])
+                    setPickingPrompt(false)
+                  }}
+                  className="w-full text-left px-4 py-3 border-b border-border last:border-0 text-sm text-ink hover:bg-canvas transition-colors"
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {promptsFeedback === 'error' && <p className="text-xs text-destructive mb-2">Failed to save.</p>}
+          {promptsFeedback === 'saved' && <p className="text-xs text-success mb-2">Saved.</p>}
+          <Button
+            onClick={savePrompts}
+            disabled={!promptsDirty || promptsSaving || selectedPrompts.some(p => !p.answer.trim())}
+            fullWidth
+            size="sm"
+          >
+            {promptsSaving ? 'Saving…' : 'Save prompts'}
           </Button>
         </section>
 

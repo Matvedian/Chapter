@@ -668,6 +668,16 @@ export default function Discover() {
                       </div>
                     </div>
                   )}
+                  {profileModal.candidate.prompts.length > 0 && (
+                    <div className="space-y-3">
+                      {profileModal.candidate.prompts.map(p => (
+                        <div key={p.question} className="bg-canvas border border-border rounded-xl px-4 py-3">
+                          <p className="text-[11px] font-semibold text-subtle uppercase tracking-wide mb-1.5">{p.question}</p>
+                          <p className="text-sm text-ink leading-relaxed italic">"{p.answer}"</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </>
               )}
               <div className="h-4" />
